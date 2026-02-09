@@ -131,7 +131,6 @@
       async function loadRequests() {
         const query = await db.collection('access_requests')
           .where('status', '==', 'Pending')
-          .orderBy('requestedAt', 'desc')
           .get();
         renderRequests(query.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       }
