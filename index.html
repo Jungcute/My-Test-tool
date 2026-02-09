@@ -485,7 +485,7 @@
           signOut: auth.signOut.bind(auth)
         };
       })();
-      const ADMIN_EMAIL = yuyu427j@gmail.com";
+      const ADMIN_EMAIL = "yuyu427j@gmail.com";
       let isAdmin = false;
       let isAuthBusy = false;
       let milestonePieChart = null;
@@ -2189,12 +2189,17 @@
         if (!fb || !fb.db) return null;
         const query = await fb.db.collection('access_requests')
           .where('uid', '==', uid)
-          .where('status', '==', 'Pending')
-          .limit(1)
           .get();
         if (query.empty) return null;
-        const doc = query.docs[0];
-        return { id: doc.id, ...doc.data() };
+        const rows = query.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const pending = rows.filter(row => row.status === 'Pending');
+        if (pending.length === 0) return null;
+        pending.sort((a, b) => {
+          const aTime = a.requestedAt && a.requestedAt.toMillis ? a.requestedAt.toMillis() : 0;
+          const bTime = b.requestedAt && b.requestedAt.toMillis ? b.requestedAt.toMillis() : 0;
+          return bTime - aTime;
+        });
+        return pending[0];
       }
 
       async function sendRequestEmail(payload) {
@@ -2216,29 +2221,37 @@
         const user = fb.auth.currentUser;
         if (els.requestStatus) els.requestStatus.textContent = '요청을 처리 중입니다...';
 
-        const pending = await fetchPendingRequest(user.uid);
-        if (pending) {
-          if (els.requestStatus) els.requestStatus.textContent = '이미 권한 요청이 접수되어 있습니다.';
-          return;
-        }
+        try {
+          const pending = await fetchPendingRequest(user.uid);
+          if (pending) {
+            if (els.requestStatus) els.requestStatus.textContent = '이미 권한 요청이 접수되어 있습니다.';
+            return;
+          }
 
-        const payload = {
-          uid: user.uid,
-          email: user.email,
-          type,
-          status: 'Pending',
-          requestedAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        await fb.db.collection('access_requests').add(payload);
-        await fb.db.collection('users').doc(user.uid).set({
-          email: user.email,
-          role: 'Guest',
-          status: 'Pending',
-          requestedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-        if (els.requestStatus) els.requestStatus.textContent = '권한 요청이 접수되었습니다. 승인 후 이용 가능합니다.';
-        await sendRequestEmail({ email: user.email, type });
+          const payload = {
+            uid: user.uid,
+            email: user.email || '',
+            type,
+            status: 'Pending',
+            requestedAt: firebase.firestore.FieldValue.serverTimestamp()
+          };
+          await fb.db.collection('access_requests').add(payload);
+          await fb.db.collection('users').doc(user.uid).set({
+            email: user.email || '',
+            role: 'Guest',
+            status: 'Pending',
+            requestedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+          if (els.requestStatus) els.requestStatus.textContent = '권한 요청이 접수되었습니다. 승인 후 이용 가능합니다.';
+          await sendRequestEmail({ email: user.email || '', type });
+        } catch (err) {
+          console.error(err);
+          if (els.requestStatus) {
+            const detail = err && (err.message || err.code || err.toString && err.toString());
+            els.requestStatus.textContent = `요청 실패: ${detail || '권한을 확인해 주세요.'}`;
+          }
+        }
       }
 
       function formatTimestamp(ts) {
