@@ -2295,6 +2295,11 @@
         }
 
         try {
+          if (!fb || !fb.db) {
+            showLoginScreen();
+            setLoginError('Firestore 초기화에 실패했습니다. Firebase 설정을 확인해 주세요.');
+            return;
+          }
           const profile = await ensureUserProfile(user);
           const approved = profile.status === 'Approved';
           const role = profile.role || 'Guest';
@@ -2323,7 +2328,7 @@
         } catch (err) {
           console.error(err);
           showLoginScreen();
-          setLoginError('인증 정보를 확인하는 중 오류가 발생했습니다.');
+          setLoginError(`인증 정보를 확인하는 중 오류가 발생했습니다. (${err?.message || err})`);
         }
       }
 
