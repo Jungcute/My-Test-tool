@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QA TMS Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDglMEBLr011isuOTEl8hwu-o23oIM6WUk",
+      authDomain: "my-test-tool.firebaseapp.com",
+      projectId: "my-test-tool",
+      storageBucket: "my-test-tool.firebasestorage.app",
+      messagingSenderId: "729796287443",
+      appId: "1:729796287443:web:63b40613b74a5809d36d26",
+      measurementId: "G-FBLJLHQX34"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+  </script>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800">
+  <div class="max-w-6xl mx-auto p-6">
+    <div id="loginScreen" class="min-h-[60vh] flex items-center justify-center">
+      <div class="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+        <h1 class="text-2xl font-bold text-slate-900">관리자 페이지</h1>
+        <p class="text-sm text-slate-500 mt-2">관리자 계정으로 로그인해 주세요.</p>
+        <button id="loginBtn" class="mt-6 w-full px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Google로 로그인</button>
+        <p id="loginError" class="mt-3 text-xs text-rose-600 hidden"></p>
+        <a href="index.html" class="mt-4 inline-block text-xs text-slate-500 hover:underline">메인으로 돌아가기</a>
+      </div>
+    </div>
+
+    <div id="adminApp" class="hidden">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-700">권한 요청 목록</h2>
+          <p class="text-xs text-slate-500">요청을 승인하거나 거절합니다.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="logoutBtn" class="px-3 py-2 text-xs rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">로그아웃</button>
+          <a href="index.html" class="px-3 py-2 text-xs rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">메인으로</a>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto bg-white border border-slate-200 rounded-2xl">
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="border-b border-slate-200 text-slate-600">
+              <th class="text-left py-3 px-2 w-56">이메일</th>
+              <th class="text-left py-3 px-2 w-24">요청</th>
+              <th class="text-left py-3 px-2 w-24">상태</th>
+              <th class="text-left py-3 px-2 w-40">요청일</th>
+              <th class="text-left py-3 px-2 w-40">작업</th>
+            </tr>
+          </thead>
+          <tbody id="requestsBody"></tbody>
+        </table>
+      </div>
+      <p id="emptyState" class="text-xs text-slate-500 mt-3 hidden">처리할 요청이 없습니다.</p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const ADMIN_EMAIL = "yuyu427j@gmail.com";
+      const loginScreen = document.getElementById('loginScreen');
+      const adminApp = document.getElementById('adminApp');
+      const loginBtn = document.getElementById('loginBtn');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const loginError = document.getElementById('loginError');
+      const requestsBody = document.getElementById('requestsBody');
+      const emptyState = document.getElementById('emptyState');
+
+      function setError(message) {
+        if (!loginError) return;
+        if (!message) {
+          loginError.textContent = '';
+          loginError.classList.add('hidden');
+          return;
+        }
+        loginError.textContent = message;
+        loginError.classList.remove('hidden');
+      }
+
+      function showLogin() {
+        loginScreen.classList.remove('hidden');
+        adminApp.classList.add('hidden');
+      }
+
+      function showAdmin() {
+        loginScreen.classList.add('hidden');
+        adminApp.classList.remove('hidden');
+      }
+
+      function formatTimestamp(ts) {
+        if (!ts || !ts.toDate) return '-';
+        return ts.toDate().toLocaleString();
+      }
+
+      function renderRequests(rows) {
+        requestsBody.innerHTML = '';
+        if (!rows || rows.length === 0) {
+          emptyState.classList.remove('hidden');
+          return;
+        }
+        emptyState.classList.add('hidden');
+        rows.forEach(row => {
+          const tr = document.createElement('tr');
+          tr.className = 'border-b border-slate-100';
+          tr.innerHTML = `
+            <td class="py-2 px-2 text-slate-700">${row.email || '-'}</td>
+            <td class="py-2 px-2 text-slate-600">${row.type || '-'}</td>
+            <td class="py-2 px-2 text-slate-600">${row.status || '-'}</td>
+            <td class="py-2 px-2 text-slate-500">${formatTimestamp(row.requestedAt)}</td>
+            <td class="py-2 px-2">
+              <div class="flex items-center gap-2">
+                <button data-action="approve" data-id="${row.id}" data-uid="${row.uid}" data-email="${row.email}" data-type="${row.type}" class="px-3 py-1 text-xs rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">수락</button>
+                <button data-action="reject" data-id="${row.id}" data-uid="${row.uid}" data-email="${row.email}" data-type="${row.type}" class="px-3 py-1 text-xs rounded-full bg-rose-50 text-rose-700 border border-rose-200">거절</button>
+              </div>
+            </td>
+          `;
+          requestsBody.appendChild(tr);
+        });
+      }
+
+      async function loadRequests() {
+        const query = await db.collection('access_requests')
+          .where('status', '==', 'Pending')
+          .orderBy('requestedAt', 'desc')
+          .get();
+        renderRequests(query.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      }
+
+      async function ensureAdminProfile(user) {
+        const ref = db.collection('users').doc(user.uid);
+        const snap = await ref.get();
+        if (!snap.exists) {
+          await ref.set({
+            email: user.email,
+            role: 'Admin',
+            status: 'Approved',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+          return { role: 'Admin', status: 'Approved' };
+        }
+        if (user.email === ADMIN_EMAIL) {
+          await ref.set({
+            role: 'Admin',
+            status: 'Approved',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+        }
+        const refreshed = await ref.get();
+        return refreshed.data();
+      }
+
+      auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+          showLogin();
+          setError('');
+          return;
+        }
+        try {
+          const profile = await ensureAdminProfile(user);
+          if (profile.role === 'Admin' && profile.status === 'Approved') {
+            showAdmin();
+            loadRequests();
+          } else {
+            showLogin();
+            setError('관리자 권한이 없습니다.');
+          }
+        } catch (err) {
+          showLogin();
+          setError(err?.message || '인증 오류가 발생했습니다.');
+        }
+      });
+
+      loginBtn.addEventListener('click', async () => {
+        try {
+          await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        } catch (err) {
+          setError(err?.message || '로그인 실패');
+        }
+      });
+
+      logoutBtn.addEventListener('click', async () => {
+        await auth.signOut();
+      });
+
+      requestsBody.addEventListener('click', async (e) => {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn) return;
+        const action = btn.dataset.action;
+        const requestId = btn.dataset.id;
+        const uid = btn.dataset.uid;
+        const type = btn.dataset.type;
+        const now = firebase.firestore.FieldValue.serverTimestamp();
+        if (action === 'approve') {
+          await db.collection('access_requests').doc(requestId).update({
+            status: 'Approved',
+            resolvedAt: now
+          });
+          await db.collection('users').doc(uid).set({
+            email: btn.dataset.email,
+            role: type === 'Admin' ? 'Admin' : 'Viewer',
+            status: 'Approved',
+            updatedAt: now
+          }, { merge: true });
+          loadRequests();
+        }
+        if (action === 'reject') {
+          await db.collection('access_requests').doc(requestId).update({
+            status: 'Rejected',
+            resolvedAt: now
+          });
+          await db.collection('users').doc(uid).set({
+            status: 'Rejected',
+            role: 'Guest',
+            updatedAt: now
+          }, { merge: true });
+          loadRequests();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
