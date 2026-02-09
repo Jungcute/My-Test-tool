@@ -9,6 +9,8 @@
   <!-- Firebase (compat SDK) -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDglMEBLr011isuOTEl8hwu-o23oIM6WUk",
@@ -21,8 +23,12 @@
     };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
+    const db = firebase.firestore();
+    const functions = firebase.functions();
     window.__fb = {
       auth,
+      db,
+      functions,
       provider: new firebase.auth.GoogleAuthProvider(),
       onAuthStateChanged: auth.onAuthStateChanged.bind(auth),
       signInWithPopup: auth.signInWithPopup.bind(auth),
@@ -53,13 +59,26 @@
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
-  <div class="max-w-7xl mx-auto p-6">
+  <div id="loginScreen" class="min-h-screen flex items-center justify-center p-6">
+    <div class="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+      <h1 class="text-2xl font-bold text-slate-900">QA 대시보드</h1>
+      <p class="text-sm text-slate-500 mt-2">실시간 QA Status Report에 접근하려면 로그인해 주세요.</p>
+      <button id="loginBtn" class="mt-6 w-full px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Google로 로그인</button>
+        <button id="logoutBtn" class="mt-2 w-full px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hidden">로그아웃</button>
+      <p id="loginError" class="mt-3 text-xs text-rose-600 hidden"></p>
+    </div>
+  </div>
+
+  <div id="appRoot" class="max-w-7xl mx-auto p-6 hidden">
     <header class="mb-6 flex items-start justify-between gap-4">
       <div>
       <h1 class="text-3xl font-bold text-slate-900">QA 대쉬보드</h1>
         <p class="text-slate-500 text-sm mt-1">Quality Assurance Dashboard - 품질 리스크 중심 관리</p>
       </div>
-      <button id="modeBadge" type="button" class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-600">뷰어 모드</button>
+      <div class="flex items-center gap-2">
+        <button id="adminPageBtn" type="button" class="hidden px-3 py-2 text-xs rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">관리자 페이지</button>
+        <button id="modeBadge" type="button" class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-600">뷰어 모드</button>
+      </div>
     </header>
 
     <div id="sectionNav" class="sticky top-0 z-30 bg-white/95 backdrop-blur border border-slate-200 rounded-2xl px-4 py-2 mb-4 flex flex-wrap items-center gap-2">
@@ -233,6 +252,48 @@
       </div>
       </div>
     </section>
+
+    <section id="adminSection" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mt-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-700">관리자 페이지</h2>
+          <p class="text-xs text-slate-500">권한 요청 목록을 승인/거절합니다.</p>
+        </div>
+        <button id="adminBackBtn" class="px-3 py-2 text-xs rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">대시보드로 돌아가기</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="border-b border-slate-200 text-slate-600">
+              <th class="text-left py-3 px-2 w-56">이메일</th>
+              <th class="text-left py-3 px-2 w-24">요청</th>
+              <th class="text-left py-3 px-2 w-24">상태</th>
+              <th class="text-left py-3 px-2 w-40">요청일</th>
+              <th class="text-left py-3 px-2 w-40">작업</th>
+            </tr>
+          </thead>
+          <tbody id="adminRequestsBody"></tbody>
+        </table>
+        <p id="adminEmpty" class="text-xs text-slate-500 mt-3 hidden">처리할 요청이 없습니다.</p>
+      </div>
+    </section>
+  </div>
+
+  <div id="requestModal" class="fixed inset-0 bg-slate-900/40 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-lg w-full max-w-md border border-slate-200">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <h3 class="text-lg font-semibold text-slate-800">접근 권한이 없습니다</h3>
+        <button id="requestModalClose" class="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-100">✕</button>
+      </div>
+      <div class="px-5 py-4 space-y-3 text-sm text-slate-600">
+        <p>권한 요청을 진행하면 관리자가 승인 후 접근할 수 있습니다.</p>
+        <p id="requestStatus" class="text-xs text-slate-500"></p>
+      </div>
+      <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-slate-100">
+        <button id="requestViewerBtn" class="px-4 py-2 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">뷰어 권한 요청</button>
+        <button id="requestAdminBtn" class="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">관리자 권한 요청</button>
+      </div>
+    </div>
   </div>
 
   <div id="milestoneModal" class="fixed inset-0 bg-slate-900/40 hidden items-center justify-center p-4">
@@ -411,8 +472,12 @@
       const fb = window.__fb || (() => {
         if (!window.firebase || !window.firebase.auth) return null;
         const auth = window.firebase.auth();
+        const db = window.firebase.firestore ? window.firebase.firestore() : null;
+        const functions = window.firebase.functions ? window.firebase.functions() : null;
         return {
           auth,
+          db,
+          functions,
           provider: new window.firebase.auth.GoogleAuthProvider(),
           onAuthStateChanged: auth.onAuthStateChanged.bind(auth),
           signInWithPopup: auth.signInWithPopup.bind(auth),
@@ -433,8 +498,19 @@
       let activeSummaryAction = 'all';
       let activeReportTab = 'test-cases';
       const els = {
+        appRoot: document.getElementById('appRoot'),
+        loginScreen: document.getElementById('loginScreen'),
+        loginBtn: document.getElementById('loginBtn'),
+        logoutBtn: document.getElementById('logoutBtn'),
+        loginError: document.getElementById('loginError'),
+        requestModal: document.getElementById('requestModal'),
+        requestModalClose: document.getElementById('requestModalClose'),
+        requestViewerBtn: document.getElementById('requestViewerBtn'),
+        requestAdminBtn: document.getElementById('requestAdminBtn'),
+        requestStatus: document.getElementById('requestStatus'),
         milestoneTitleDisplay: document.getElementById('milestoneTitleDisplay'),
         modeBadge: document.getElementById('modeBadge'),
+        adminPageBtn: document.getElementById('adminPageBtn'),
         milestoneJiraBadge: document.getElementById('milestoneJiraBadge'),
         milestoneModal: document.getElementById('milestoneModal'),
         milestoneModalTitleInput: document.getElementById('milestoneModalTitleInput'),
@@ -490,6 +566,10 @@
         testCasesPanel: document.getElementById('testCasesPanel'),
         insightsPanel: document.getElementById('insightsPanel'),
         insightsContent: document.getElementById('insightsContent'),
+        adminSection: document.getElementById('adminSection'),
+        adminBackBtn: document.getElementById('adminBackBtn'),
+        adminRequestsBody: document.getElementById('adminRequestsBody'),
+        adminEmpty: document.getElementById('adminEmpty'),
         tcFilterTabs: document.getElementById('tcFilterTabs'),
         epicTabs: document.getElementById('epicTabs'),
         taskTabs: document.getElementById('taskTabs'),
@@ -508,6 +588,7 @@
         tcBody: document.getElementById('tcBody'),
         tcCount: document.getElementById('tcCount'),
         summaryHeader: document.getElementById('summaryHeader'),
+        reportSection: document.getElementById('reportSection'),
         tableEditToggle: document.getElementById('tableEditToggle'),
         addEpicBtn: document.getElementById('addEpicBtn'),
         deleteEpicBtn: document.getElementById('deleteEpicBtn'),
@@ -519,6 +600,37 @@
         csvFileInput: document.getElementById('csvFileInput'),
         copyEpicLink: document.getElementById('copyEpicLink')
       };
+
+      const projectId = fb && fb.db && fb.db.app ? fb.db.app.options.projectId : null;
+
+      function showLoginScreen() {
+        if (els.loginScreen) els.loginScreen.classList.remove('hidden');
+        if (els.appRoot) els.appRoot.classList.add('hidden');
+      }
+
+      function showApp() {
+        if (els.loginScreen) els.loginScreen.classList.add('hidden');
+        if (els.appRoot) els.appRoot.classList.remove('hidden');
+        if (els.adminSection) els.adminSection.classList.add('hidden');
+        if (els.reportSection) els.reportSection.classList.remove('hidden');
+      }
+
+      function showAdminSection() {
+        if (els.adminSection) els.adminSection.classList.remove('hidden');
+        if (els.reportSection) els.reportSection.classList.add('hidden');
+      }
+
+      function openRequestModal() {
+        if (!els.requestModal) return;
+        els.requestModal.classList.remove('hidden');
+        els.requestModal.classList.add('flex');
+      }
+
+      function closeRequestModal() {
+        if (!els.requestModal) return;
+        els.requestModal.classList.add('hidden');
+        els.requestModal.classList.remove('flex');
+      }
 
       function loadState() {
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -1992,6 +2104,9 @@
         els.modeBadge.textContent = isAdmin ? '관리자 모드' : '뷰어 모드';
         els.modeBadge.className = 'text-xs font-semibold px-3 py-1 rounded-full ' +
           (isAdmin ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600');
+        if (els.adminPageBtn) {
+          els.adminPageBtn.classList.toggle('hidden', !isAdmin);
+        }
         if (!isAdmin) {
           els.addEpicBtn.classList.add('hidden');
           els.deleteEpicBtn.classList.add('hidden');
@@ -2030,6 +2145,188 @@
         }
       }
 
+      function setLoginError(message) {
+        if (!els.loginError) return;
+        if (!message) {
+          els.loginError.classList.add('hidden');
+          els.loginError.textContent = '';
+          return;
+        }
+        els.loginError.textContent = message;
+        els.loginError.classList.remove('hidden');
+      }
+
+      async function ensureUserProfile(user) {
+        if (!fb || !fb.db) throw new Error('Firestore가 초기화되지 않았습니다.');
+        const userRef = fb.db.collection('users').doc(user.uid);
+        const snap = await userRef.get();
+        if (snap.exists) {
+          if (user.email === ADMIN_EMAIL) {
+            await userRef.set({
+              email: user.email,
+              role: 'Admin',
+              status: 'Approved',
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            const refreshed = await userRef.get();
+            return refreshed.data();
+          }
+          return snap.data();
+        }
+        const payload = {
+          email: user.email,
+          role: user.email === ADMIN_EMAIL ? 'Admin' : 'Guest',
+          status: user.email === ADMIN_EMAIL ? 'Approved' : 'Pending',
+          requestedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        await userRef.set(payload);
+        return payload;
+      }
+
+      async function fetchPendingRequest(uid) {
+        if (!fb || !fb.db) return null;
+        const query = await fb.db.collection('access_requests')
+          .where('uid', '==', uid)
+          .where('status', '==', 'Pending')
+          .orderBy('requestedAt', 'desc')
+          .limit(1)
+          .get();
+        if (query.empty) return null;
+        const doc = query.docs[0];
+        return { id: doc.id, ...doc.data() };
+      }
+
+      async function sendRequestEmail(payload) {
+        if (!projectId) return;
+        const url = `https://us-central1-${projectId}.cloudfunctions.net/notifyAccessRequest`;
+        try {
+          await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } catch (err) {
+          console.warn('권한 요청 메일 전송 실패', err);
+        }
+      }
+
+      async function submitAccessRequest(type) {
+        if (!fb || !fb.db || !fb.auth.currentUser) return;
+        const user = fb.auth.currentUser;
+        if (els.requestStatus) els.requestStatus.textContent = '요청을 처리 중입니다...';
+
+        const pending = await fetchPendingRequest(user.uid);
+        if (pending) {
+          if (els.requestStatus) els.requestStatus.textContent = '이미 권한 요청이 접수되어 있습니다.';
+          return;
+        }
+
+        const payload = {
+          uid: user.uid,
+          email: user.email,
+          type,
+          status: 'Pending',
+          requestedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        await fb.db.collection('access_requests').add(payload);
+        await fb.db.collection('users').doc(user.uid).set({
+          email: user.email,
+          role: 'Guest',
+          status: 'Pending',
+          requestedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        if (els.requestStatus) els.requestStatus.textContent = '권한 요청이 접수되었습니다. 승인 후 이용 가능합니다.';
+        await sendRequestEmail({ email: user.email, type });
+      }
+
+      function formatTimestamp(ts) {
+        if (!ts || !ts.toDate) return '-';
+        return ts.toDate().toLocaleString();
+      }
+
+      function renderAdminRequests(rows) {
+        if (!els.adminRequestsBody || !els.adminEmpty) return;
+        els.adminRequestsBody.innerHTML = '';
+        if (!rows || rows.length === 0) {
+          els.adminEmpty.classList.remove('hidden');
+          return;
+        }
+        els.adminEmpty.classList.add('hidden');
+        rows.forEach(row => {
+          const tr = document.createElement('tr');
+          tr.className = 'border-b border-slate-100';
+          tr.innerHTML = `
+            <td class="py-2 px-2 text-slate-700">${row.email || '-'}</td>
+            <td class="py-2 px-2 text-slate-600">${row.type || '-'}</td>
+            <td class="py-2 px-2 text-slate-600">${row.status || '-'}</td>
+            <td class="py-2 px-2 text-slate-500">${formatTimestamp(row.requestedAt)}</td>
+            <td class="py-2 px-2">
+              <div class="flex items-center gap-2">
+                <button data-admin-action="approve" data-id="${row.id}" data-email="${row.email}" data-uid="${row.uid}" data-type="${row.type}" class="px-3 py-1 text-xs rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">수락</button>
+                <button data-admin-action="reject" data-id="${row.id}" data-email="${row.email}" data-uid="${row.uid}" data-type="${row.type}" class="px-3 py-1 text-xs rounded-full bg-rose-50 text-rose-700 border border-rose-200">거절</button>
+              </div>
+            </td>
+          `;
+          els.adminRequestsBody.appendChild(tr);
+        });
+      }
+
+      async function loadAdminRequests() {
+        if (!fb || !fb.db) return;
+        const query = await fb.db.collection('access_requests')
+          .where('status', '==', 'Pending')
+          .orderBy('requestedAt', 'desc')
+          .get();
+        const rows = query.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderAdminRequests(rows);
+      }
+
+      async function handleAuthState(user) {
+        if (!user) {
+          isAdmin = false;
+          applyRoleUI();
+          showLoginScreen();
+          setLoginError('');
+          if (els.loginBtn) els.loginBtn.classList.remove('hidden');
+          if (els.logoutBtn) els.logoutBtn.classList.add('hidden');
+          return;
+        }
+
+        try {
+          const profile = await ensureUserProfile(user);
+          const approved = profile.status === 'Approved';
+          const role = profile.role || 'Guest';
+          if (approved && (role === 'Viewer' || role === 'Admin')) {
+            isAdmin = role === 'Admin';
+            applyRoleUI();
+            showApp();
+            renderAll();
+            closeRequestModal();
+            if (isAdmin) loadAdminRequests();
+          } else {
+            isAdmin = false;
+            applyRoleUI();
+            showLoginScreen();
+            if (els.loginBtn) els.loginBtn.classList.add('hidden');
+            if (els.logoutBtn) els.logoutBtn.classList.remove('hidden');
+            setLoginError('접근 권한이 없습니다. 권한 요청을 진행해 주세요.');
+            openRequestModal();
+            const pending = await fetchPendingRequest(user.uid);
+            if (els.requestStatus) {
+              els.requestStatus.textContent = pending
+                ? '이미 권한 요청이 접수되어 있습니다.'
+                : '';
+            }
+          }
+        } catch (err) {
+          console.error(err);
+          showLoginScreen();
+          setLoginError('인증 정보를 확인하는 중 오류가 발생했습니다.');
+        }
+      }
+
       if (!state.activeEpicId && state.epics.length > 0) {
         state.activeEpicId = state.epics[0].id;
       }
@@ -2041,40 +2338,121 @@
       applyRoleUI();
       renderAll();
 
-      // Firebase 로그인 상태에 따라 관리자 모드 자동 전환
+      // Firebase 로그인 상태에 따라 화면 전환
       if (fb) {
-        fb.onAuthStateChanged((user) => {
-          isAdmin = !!user && user.email === ADMIN_EMAIL;
-          applyRoleUI();
-          renderAll();
+        fb.onAuthStateChanged(handleAuthState);
+      } else {
+        showLoginScreen();
+        setLoginError('Firebase 초기화에 실패했습니다.');
+      }
+
+      if (els.loginBtn) {
+        els.loginBtn.addEventListener('click', async () => {
+          if (!fb) {
+            setLoginError('Firebase 초기화에 실패했습니다.');
+            return;
+          }
+          if (isAuthBusy) return;
+          isAuthBusy = true;
+          els.loginBtn.disabled = true;
+          els.loginBtn.classList.add('opacity-60', 'pointer-events-none');
+          try {
+            await fb.signInWithPopup(fb.provider);
+          } catch (e) {
+            setLoginError('로그인 실패: ' + (e?.message || e));
+          } finally {
+            isAuthBusy = false;
+            els.loginBtn.disabled = false;
+            els.loginBtn.classList.remove('opacity-60', 'pointer-events-none');
+          }
         });
       }
 
-      // 뱃지 클릭하면: 로그인(관리자 전환) / 로그아웃(뷰어 전환)
-      els.modeBadge.addEventListener('click', async () => {
-        if (!fb) {
-          alert("Firebase 로드가 안 됐어요. Firebase 초기화 코드가 <script>보다 위에 있는지 확인!");
-          return;
-        }
-        if (isAuthBusy) return;
-        isAuthBusy = true;
-        els.modeBadge.disabled = true;
-        els.modeBadge.classList.add('opacity-60', 'pointer-events-none');
-
-        try {
-          if (!isAdmin) {
-            await fb.signInWithPopup(fb.provider);
-          } else {
+      if (els.logoutBtn) {
+        els.logoutBtn.addEventListener('click', async () => {
+          if (!fb) return;
+          try {
             await fb.signOut();
+          } catch (e) {
+            setLoginError('로그아웃 실패: ' + (e?.message || e));
           }
-        } catch (e) {
-          alert("로그인 실패: " + (e?.message || e));
-        } finally {
-          isAuthBusy = false;
-          els.modeBadge.disabled = false;
-          els.modeBadge.classList.remove('opacity-60', 'pointer-events-none');
-        }
-      });
+        });
+      }
+
+      if (els.modeBadge) {
+        els.modeBadge.addEventListener('click', async () => {
+          if (!fb || !fb.auth.currentUser) return;
+          try {
+            await fb.signOut();
+          } catch (e) {
+            alert('로그아웃 실패: ' + (e?.message || e));
+          }
+        });
+      }
+
+      if (els.requestModalClose) {
+        els.requestModalClose.addEventListener('click', closeRequestModal);
+      }
+      if (els.requestModal) {
+        els.requestModal.addEventListener('click', (e) => {
+          if (e.target === els.requestModal) closeRequestModal();
+        });
+      }
+      if (els.requestViewerBtn) {
+        els.requestViewerBtn.addEventListener('click', () => submitAccessRequest('Viewer'));
+      }
+      if (els.requestAdminBtn) {
+        els.requestAdminBtn.addEventListener('click', () => submitAccessRequest('Admin'));
+      }
+
+      if (els.adminPageBtn) {
+        els.adminPageBtn.addEventListener('click', () => {
+          showAdminSection();
+          loadAdminRequests();
+        });
+      }
+      if (els.adminBackBtn) {
+        els.adminBackBtn.addEventListener('click', () => {
+          showApp();
+        });
+      }
+      if (els.adminRequestsBody) {
+        els.adminRequestsBody.addEventListener('click', async (e) => {
+          if (!isAdmin) return;
+          const btn = e.target.closest('button[data-admin-action]');
+          if (!btn) return;
+          const action = btn.dataset.adminAction;
+          const requestId = btn.dataset.id;
+          const uid = btn.dataset.uid;
+          const type = btn.dataset.type;
+          const now = firebase.firestore.FieldValue.serverTimestamp();
+          if (action === 'approve') {
+            await fb.db.collection('access_requests').doc(requestId).update({
+              status: 'Approved',
+              resolvedAt: now
+            });
+            await fb.db.collection('users').doc(uid).set({
+              email: btn.dataset.email,
+              role: type === 'Admin' ? 'Admin' : 'Viewer',
+              status: 'Approved',
+              updatedAt: now
+            }, { merge: true });
+            loadAdminRequests();
+          }
+          if (action === 'reject') {
+            await fb.db.collection('access_requests').doc(requestId).update({
+              status: 'Rejected',
+              resolvedAt: now
+            });
+            await fb.db.collection('users').doc(uid).set({
+              status: 'Rejected',
+              role: 'Guest',
+              updatedAt: now
+            }, { merge: true });
+            loadAdminRequests();
+          }
+        });
+      }
 
       function openAdminLogin() {
         if (!els.adminLoginModal) return;
