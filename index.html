@@ -28,6 +28,31 @@
       to { opacity: 1; transform: translateY(0); }
     }
   </style>
+   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDglMEBLr011isuOTEl8hwu-o23oIM6WUk",
+      authDomain: "my-test-tool.firebaseapp.com",
+      projectId: "my-test-tool",
+      storageBucket: "my-test-tool.firebasestorage.app",
+      messagingSenderId: "729796287443",
+      appId: "1:729796287443:web:63b40613b74a5809d36d26",
+      measurementId: "G-FBLJLHQX34"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+
+    window.__fb = {
+      auth: firebase.auth(),
+      provider: new firebase.auth.GoogleAuthProvider(),
+      onAuthStateChanged: firebase.auth().onAuthStateChanged.bind(firebase.auth()),
+      signInWithPopup: firebase.auth().signInWithPopup.bind(firebase.auth()),
+      signOut: firebase.auth().signOut.bind(firebase.auth())
+    };
+  </script>
+
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
   <div class="max-w-7xl mx-auto p-6">
@@ -385,8 +410,9 @@
       const DEFAULT_MILESTONE_TITLE = '마일스톤 제목';
 
       const state = loadState();
-      let isAdmin = new URLSearchParams(window.location.search).get('admin') === '1' ||
-        localStorage.getItem('qa_tms_admin') === '1';
+      const fb = window.__fb;
+      const ADMIN_EMAIL = "yuyu427j@gmail.com";
+      let isAdmin = false;
       let milestonePieChart = null;
       let lastAddedTcId = null;
       let editTcId = null;
@@ -1894,8 +1920,7 @@
         const epic = getActiveEpic();
         epic.name = e.target.value.trim() || '에픽';
         persist();
-        renderTabs();
-        els.epicTitleDisplay.textContent = epic.name;
+        renderAll();
       });
 
       if (els.epicJiraUrl) els.epicJiraUrl.addEventListener('input', (e) => {
@@ -2007,11 +2032,11 @@
 
       // Firebase 로그인 상태에 따라 관리자 모드 자동 전환
       if (fb) {
-        fb.onAuthStateChanged(fb.auth, (user) => {
-          isAdmin = !!user && user.email === ADMIN_EMAIL;
-          applyRoleUI();
-          renderAll();
-        });
+        fb.onAuthStateChanged((user) => {
+  isAdmin = !!user && user.email === ADMIN_EMAIL;
+  applyRoleUI();
+  renderAll();
+});
       }
 
       // 뱃지 클릭하면: 로그인(관리자 전환) / 로그아웃(뷰어 전환)
@@ -2023,9 +2048,9 @@
 
         try {
           if (!isAdmin) {
-            await fb.signInWithPopup(fb.auth, fb.provider);
+            await fb.signInWithPopup(fb.provider);
           } else {
-            await fb.signOut(fb.auth);
+            await fb.signOut();
           }
         } catch (e) {
           alert("로그인 실패: " + (e?.message || e));
@@ -2062,17 +2087,8 @@
         if (e.target === els.adminLoginModal) closeAdminLogin();
       });
       els.adminLoginSubmit.addEventListener('click', () => {
-        const id = els.adminLoginId.value.trim();
-        const pw = els.adminLoginPw.value.trim();
-        if (id === 'test' && pw === '1234') {
-          localStorage.setItem('qa_tms_admin', '1');
-          isAdmin = true;
-          applyRoleUI();
-          renderAll();
-          closeAdminLogin();
-          return;
-        }
-        els.adminLoginError.classList.remove('hidden');
+        alert('이 로그인은 더 이상 사용하지 않습니다. 상단 뱃지(뷰어 모드)를 눌러 Google 로그인 해주세요.');
+        return;
       });
 
       els.adminLogoutClose.addEventListener('click', closeAdminLogout);
@@ -2080,13 +2096,13 @@
       els.adminLogoutModal.addEventListener('click', (e) => {
         if (e.target === els.adminLogoutModal) closeAdminLogout();
       });
-      els.adminLogoutConfirm.addEventListener('click', () => {
-        localStorage.removeItem('qa_tms_admin');
-        isAdmin = false;
-        applyRoleUI();
-        renderAll();
-        closeAdminLogout();
-      });
+      els.adminLogoutConfirm.addEventListener('click', async () => {
+  try { if (fb) await fb.signOut(); } catch {}
+  isAdmin = false;
+  applyRoleUI();
+  renderAll();
+  closeAdminLogout();
+});
       document.querySelectorAll('.section-link').forEach((btn) => {
         btn.addEventListener('click', () => {
           const targetId = btn.dataset.target;
