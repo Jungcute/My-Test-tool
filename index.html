@@ -5,45 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QA TMS (Quality Assurance Dashboard)</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    .highlight-row { background-color: #fef9c3; transition: background-color 0.8s ease; }
-    section[data-section] { scroll-margin-top: 96px; }
-    .drop-indicator-top { box-shadow: inset 0 3px 0 0 #3b82f6; }
-    .drop-indicator-bottom { box-shadow: inset 0 -3px 0 0 #3b82f6; }
-    .row-enter { animation: rowEnter 0.35s ease; }
-    @keyframes rowEnter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .highlight-row {
+      background-color: #fef9c3;
+      transition: background-color 0.8s ease;
+    }
+    section[data-section] {
+      scroll-margin-top: 96px;
+    }
+    .drop-indicator-top {
+      box-shadow: inset 0 3px 0 0 #3b82f6;
+    }
+    .drop-indicator-bottom {
+      box-shadow: inset 0 -3px 0 0 #3b82f6;
+    }
+    .row-enter {
+      animation: rowEnter 0.35s ease;
+    }
+    @keyframes rowEnter {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
-
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDglMEBLr011isuOTEl8hwu-o23oIM6WUk",
-      authDomain: "my-test-tool.firebaseapp.com",
-      projectId: "my-test-tool",
-      storageBucket: "my-test-tool.firebasestorage.app",
-      messagingSenderId: "729796287443",
-      appId: "1:729796287443:web:63b40613b74a5809d36d26",
-      measurementId: "G-FBLJLHQX34"
-    };
-    firebase.initializeApp(firebaseConfig);
-    window.__fb = {
-      auth: firebase.auth(),
-      provider: new firebase.auth.GoogleAuthProvider(),
-      onAuthStateChanged: firebase.auth().onAuthStateChanged.bind(firebase.auth()),
-      signInWithPopup: firebase.auth().signInWithPopup.bind(firebase.auth()),
-      signOut: firebase.auth().signOut.bind(firebase.auth())
-    };
-  </script>
 </head>
-
 <body class="bg-slate-50 min-h-screen text-slate-800">
   <div class="max-w-7xl mx-auto p-6">
     <header class="mb-6 flex items-start justify-between gap-4">
       <div>
-        <h1 class="text-3xl font-bold text-slate-900">QA 대쉬보드</h1>
+      <h1 class="text-3xl font-bold text-slate-900">QA 대쉬보드</h1>
         <p class="text-slate-500 text-sm mt-1">Quality Assurance Dashboard - 품질 리스크 중심 관리</p>
       </div>
       <button id="modeBadge" type="button" class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-600">뷰어 모드</button>
@@ -57,181 +47,171 @@
       <span class="ml-auto text-xs text-slate-400">스크롤 시 상단 고정</span>
     </div>
 
-    <!-- DASHBOARD -->
     <section id="dashboardSection" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6" data-section>
       <div class="section-content">
-        <div class="grid lg:grid-cols-[1.1fr,1fr] gap-6 items-start">
-          <div>
-            <div class="flex items-center gap-3 mb-4 flex-wrap">
-              <h2 id="milestoneTitleDisplay" class="text-3xl font-black text-slate-900 cursor-pointer hover:text-indigo-600 transition-colors">마일스톤 제목</h2>
-              <span class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">Global Summary</span>
-              <a id="milestoneJiraBadge" href="#" target="_blank" rel="noopener" class="hidden text-xs font-semibold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full hover:bg-indigo-100 transition-colors">Jira 페이지 이동 🔗</a>
-            </div>
-
-            <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm max-w-md">
-              <div class="flex items-center gap-4">
-                <div class="w-28 h-28">
-                  <canvas id="milestonePie" height="120"></canvas>
-                </div>
-                <div class="flex-1">
-                  <p class="text-xs text-slate-500">완료 비율</p>
-                  <p id="milestoneMetricText" class="text-2xl font-black text-slate-900">완료 0 / 0.00%</p>
-                  <div class="mt-4 space-y-2 text-sm">
-                    <div class="flex items-center justify-between">
-                      <span class="flex items-center gap-2 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> 완료</span>
-                      <span id="milestoneLegendComplete" class="font-semibold text-slate-700">0</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                      <span class="flex items-center gap-2 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> 진행 중</span>
-                      <span id="milestoneLegendInProgress" class="font-semibold text-slate-700">0</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                      <span class="flex items-center gap-2 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-slate-300"></span> 할 일</span>
-                      <span id="milestoneLegendTodo" class="font-semibold text-slate-700">0</span>
-                    </div>
+      <div class="grid lg:grid-cols-[1.1fr,1fr] gap-6 items-start">
+        <div>
+          <div class="flex items-center gap-3 mb-4 flex-wrap">
+            <h2 id="milestoneTitleDisplay" class="text-3xl font-black text-slate-900 cursor-pointer hover:text-indigo-600 transition-colors">마일스톤 제목</h2>
+            <span class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">Global Summary</span>
+            <a id="milestoneJiraBadge" href="#" target="_blank" rel="noopener" class="hidden text-xs font-semibold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full hover:bg-indigo-100 transition-colors">Jira 페이지 이동 🔗</a>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm max-w-md">
+            <div class="flex items-center gap-4">
+              <div class="w-28 h-28">
+                <canvas id="milestonePie" height="120"></canvas>
+              </div>
+              <div class="flex-1">
+                <p class="text-xs text-slate-500">완료 비율</p>
+                <p id="milestoneMetricText" class="text-2xl font-black text-slate-900">완료 0 / 0.00%</p>
+                <div class="mt-4 space-y-2 text-sm">
+                  <div class="flex items-center justify-between">
+                    <span class="flex items-center gap-2 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> 완료</span>
+                    <span id="milestoneLegendComplete" class="font-semibold text-slate-700">0</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="flex items-center gap-2 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> 진행 중</span>
+                    <span id="milestoneLegendInProgress" class="font-semibold text-slate-700">0</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="flex items-center gap-2 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-slate-300"></span> 할 일</span>
+                    <span id="milestoneLegendTodo" class="font-semibold text-slate-700">0</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-
-          <div class="flex flex-col gap-4">
-            <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-              <div class="flex items-center justify-between">
-                <p class="text-xs uppercase text-slate-400">Epic Progress</p>
-                <button id="copyEpicLink" title="에픽 링크 복사" class="w-9 h-9 inline-flex items-center justify-center border border-slate-300 rounded-lg text-base hover:bg-slate-50">🔗</button>
-              </div>
-              <div class="mt-2 flex items-center gap-2">
-                <h3 id="epicTitleDisplay" class="text-2xl font-bold text-slate-900 cursor-pointer hover:underline truncate">에픽 1</h3>
-              </div>
-              <div class="grid gap-2 mt-3">
-                <input id="epicTitleInput" type="text" class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-full" placeholder="에픽 제목 입력">
-                <input id="epicJiraUrl" type="url" class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-full" placeholder="에픽 Jira URL">
-              </div>
-              <div class="flex items-center gap-6 mt-4">
-                <div class="text-center">
-                  <p class="text-xs text-slate-400">Fail</p>
-                  <p id="epicFailCount" class="text-2xl font-bold text-rose-600">0</p>
-                </div>
-                <div class="text-center">
-                  <p class="text-xs text-slate-400">Block</p>
-                  <p id="epicBlockCount" class="text-2xl font-bold text-amber-600">0</p>
-                </div>
-              </div>
-              <div class="mt-3">
-                <p class="text-sm font-medium text-slate-600 mb-2">누적 프로그레스</p>
-                <div class="h-4 bg-slate-200 rounded-full overflow-hidden flex">
-                  <div id="epicBarPass" class="h-full bg-emerald-500 transition-all" style="width:0%"></div>
-                  <div id="epicBarFail" class="h-full bg-rose-500 transition-all" style="width:0%"></div>
-                  <div id="epicBarBlock" class="h-full bg-amber-500 transition-all" style="width:0%"></div>
-                  <div id="epicBarNot" class="h-full bg-slate-300 transition-all" style="width:0%"></div>
-                </div>
-                <p id="epicProgressText" class="text-sm text-slate-500 mt-1 text-right">0 / 0 완료 (0%)</p>
-              </div>
+        </div>
+        <div class="flex flex-col gap-4">
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <p class="text-xs uppercase text-slate-400">Epic Progress</p>
+            <button id="copyEpicLink" title="에픽 링크 복사" class="w-9 h-9 inline-flex items-center justify-center border border-slate-300 rounded-lg text-base hover:bg-slate-50">🔗</button>
+          </div>
+          <div class="mt-2 flex items-center gap-2">
+            <h3 id="epicTitleDisplay" class="text-2xl font-bold text-slate-900 cursor-pointer hover:underline truncate">에픽 1</h3>
+          </div>
+          <div class="grid gap-2 mt-3">
+            <input id="epicTitleInput" type="text" class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-full" placeholder="에픽 제목 입력">
+            <input id="epicJiraUrl" type="url" class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-full" placeholder="에픽 Jira URL">
+          </div>
+          <div class="flex items-center gap-6 mt-4">
+            <div class="text-center">
+              <p class="text-xs text-slate-400">Fail</p>
+              <p id="epicFailCount" class="text-2xl font-bold text-rose-600">0</p>
             </div>
-
-            <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-              <p class="text-xs uppercase text-slate-400">Task Progress</p>
-              <div class="mt-3">
-                <p class="text-sm font-medium text-slate-600 mb-2">태스크 진행률</p>
-                <div class="h-4 bg-slate-200 rounded-full overflow-hidden flex">
-                  <div id="taskBarPass" class="h-full bg-emerald-500 transition-all" style="width:0%"></div>
-                  <div id="taskBarInProgress" class="h-full bg-blue-500 transition-all" style="width:0%"></div>
-                  <div id="taskBarTodo" class="h-full bg-slate-300 transition-all" style="width:0%"></div>
-                </div>
-                <p id="taskProgressText" class="text-sm text-slate-500 mt-1 text-right">0 / 0 완료 (0%)</p>
-              </div>
+            <div class="text-center">
+              <p class="text-xs text-slate-400">Block</p>
+              <p id="epicBlockCount" class="text-2xl font-bold text-amber-600">0</p>
             </div>
           </div>
+          <div class="mt-3">
+            <p class="text-sm font-medium text-slate-600 mb-2">누적 프로그레스</p>
+            <div class="h-4 bg-slate-200 rounded-full overflow-hidden flex">
+              <div id="epicBarPass" class="h-full bg-emerald-500 transition-all" style="width:0%"></div>
+              <div id="epicBarFail" class="h-full bg-rose-500 transition-all" style="width:0%"></div>
+              <div id="epicBarBlock" class="h-full bg-amber-500 transition-all" style="width:0%"></div>
+              <div id="epicBarNot" class="h-full bg-slate-300 transition-all" style="width:0%"></div>
+            </div>
+            <p id="epicProgressText" class="text-sm text-slate-500 mt-1 text-right">0 / 0 완료 (0%)</p>
+          </div>
         </div>
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <p class="text-xs uppercase text-slate-400">Task Progress</p>
+          </div>
+          <div class="mt-3">
+            <p class="text-sm font-medium text-slate-600 mb-2">태스크 진행률</p>
+            <div class="h-4 bg-slate-200 rounded-full overflow-hidden flex">
+              <div id="taskBarPass" class="h-full bg-emerald-500 transition-all" style="width:0%"></div>
+              <div id="taskBarInProgress" class="h-full bg-blue-500 transition-all" style="width:0%"></div>
+              <div id="taskBarTodo" class="h-full bg-slate-300 transition-all" style="width:0%"></div>
+            </div>
+            <p id="taskProgressText" class="text-sm text-slate-500 mt-1 text-right">0 / 0 완료 (0%)</p>
+          </div>
+        </div>
+        </div>
+      </div>
       </div>
     </section>
 
-    <!-- EPIC / TASK TABS -->
     <section id="epicTabsSection" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-4" data-section>
       <div class="section-content">
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h2 class="text-lg font-semibold text-slate-700 flex items-center gap-2">
-            <span class="inline-flex w-4 h-4 items-center justify-center">📌</span>
-            Epic 탭
-          </h2>
-          <div class="ml-auto flex items-center gap-2">
-            <button id="addEpicBtn" class="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">+ 에픽 추가</button>
-            <button id="deleteEpicBtn" class="px-3 py-2 bg-rose-50 text-rose-600 rounded-lg text-sm hover:bg-rose-100">에픽 삭제</button>
-            <button id="epicEditToggle" class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600">편집</button>
-          </div>
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h2 class="text-lg font-semibold text-slate-700 flex items-center gap-2">
+          <img src="epic.svg" alt="Epic" class="w-4 h-4">
+          Epic 탭
+        </h2>
+        <div class="ml-auto flex items-center gap-2">
+          <button id="addEpicBtn" class="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">+ 에픽 추가</button>
+          <button id="deleteEpicBtn" class="px-3 py-2 bg-rose-50 text-rose-600 rounded-lg text-sm hover:bg-rose-100">에픽 삭제</button>
+          <button id="epicEditToggle" class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600">편집</button>
         </div>
-        <div id="epicTabs" class="flex gap-2 overflow-x-auto pb-1 border-b border-slate-200"></div>
-
-        <div class="flex items-center justify-between gap-3 mt-4 mb-2 w-full">
-          <h3 class="text-sm font-semibold text-slate-600 flex items-center gap-2">
-            <span class="inline-flex w-4 h-4 items-center justify-center">🧩</span>
-            Task 탭
-          </h3>
-          <div class="ml-auto flex items-center gap-2">
-            <button id="addTaskBtn" class="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700">+ Task 추가</button>
-            <button id="deleteTaskBtn" class="px-3 py-2 bg-rose-50 text-rose-600 rounded-lg text-sm hover:bg-rose-100">Task 삭제</button>
-            <button id="taskEditToggle" class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600">편집</button>
-          </div>
+      </div>
+      <div id="epicTabs" class="flex gap-2 overflow-x-auto pb-1 border-b border-slate-200"></div>
+      <div class="flex items-center justify-between gap-3 mt-4 mb-2 w-full">
+        <h3 class="text-sm font-semibold text-slate-600 flex items-center gap-2">
+          <img src="task.svg" alt="Task" class="w-4 h-4">
+          Task 탭
+        </h3>
+        <div class="ml-auto flex items-center gap-2">
+          <button id="addTaskBtn" class="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700">+ Task 추가</button>
+          <button id="deleteTaskBtn" class="px-3 py-2 bg-rose-50 text-rose-600 rounded-lg text-sm hover:bg-rose-100">Task 삭제</button>
+          <button id="taskEditToggle" class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600">편집</button>
         </div>
-        <div id="taskTabs" class="flex gap-2 overflow-x-auto pb-1 border-b border-slate-200"></div>
+      </div>
+      <div id="taskTabs" class="flex gap-2 overflow-x-auto pb-1 border-b border-slate-200"></div>
       </div>
     </section>
 
-    <!-- REPORT -->
+
     <section id="reportSection" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6" data-section>
       <div class="section-content">
-        <div id="summaryHeader" class="mb-4"></div>
-
-        <div id="reportTabs" class="flex items-center gap-2 mb-3">
-          <button data-report-tab="test-cases" class="px-3 py-2 text-xs rounded-lg border bg-slate-900 text-white">Test Cases</button>
-          <button data-report-tab="status-report" class="px-3 py-2 text-xs rounded-lg border bg-white text-slate-600 border-slate-200 hover:bg-slate-50">Status Report</button>
-        </div>
-
-        <div id="testCasesPanel">
-          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
-            <div class="flex flex-wrap items-center gap-2">
-              <h2 class="text-lg font-semibold text-slate-700">Test Case</h2>
-              <span id="tcCount" class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">0건</span>
-              <div id="tcFilterTabs" class="flex items-center gap-1 bg-slate-100 rounded-full p-1"></div>
-            </div>
-            <div class="flex items-center gap-2">
-              <button id="importCsvBtn" class="px-3 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm hover:bg-slate-50">CSV 불러오기</button>
-              <button id="exportCsvBtn" class="px-3 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm hover:bg-slate-50">CSV 내보내기</button>
-              <input id="csvFileInput" type="file" accept=".csv,.txt" class="hidden">
-              <button id="addTcBtn" class="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">+ 새 테스트 케이스 추가</button>
-              <button id="tableEditToggle" class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600">편집</button>
-            </div>
+      <div id="summaryHeader" class="mb-4"></div>
+      <div id="reportTabs" class="flex items-center gap-2 mb-3">
+        <button data-report-tab="test-cases" class="px-3 py-2 text-xs rounded-lg border bg-slate-900 text-white">Test Cases</button>
+        <button data-report-tab="status-report" class="px-3 py-2 text-xs rounded-lg border bg-white text-slate-600 border-slate-200 hover:bg-slate-50">Status Report</button>
+      </div>
+      <div id="testCasesPanel">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-lg font-semibold text-slate-700">Test Case</h2>
+            <span id="tcCount" class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">0건</span>
+            <div id="tcFilterTabs" class="flex items-center gap-1 bg-slate-100 rounded-full p-1"></div>
           </div>
-
-          <div class="overflow-x-auto">
-            <table class="w-full min-w-[1250px] text-xs">
-              <thead>
-                <tr class="border-b border-slate-200 text-slate-600">
-                  <th class="text-left py-3 px-2 w-12">No.</th>
-                  <th class="text-left py-3 px-2 w-40">중분류</th>
-                  <th class="text-left py-3 px-2 w-44">Precondition</th>
-                  <th class="text-left py-3 px-2 w-52">테스트 내용</th>
-                  <th class="text-left py-3 px-2 w-64">기대 결과</th>
-                  <th class="text-left py-3 px-2 w-32">결과</th>
-                  <th class="text-left py-3 px-2 w-56">메모</th>
-                  <th class="text-left py-3 px-2 w-16">이슈</th>
-                  <th class="text-left py-3 px-2 w-20">작업</th>
-                </tr>
-              </thead>
-              <tbody id="tcBody"></tbody>
-            </table>
+          <div class="flex items-center gap-2">
+            <button id="importCsvBtn" class="px-3 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm hover:bg-slate-50">CSV 불러오기</button>
+            <button id="exportCsvBtn" class="px-3 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm hover:bg-slate-50">CSV 내보내기</button>
+            <input id="csvFileInput" type="file" accept=".csv,.txt" class="hidden">
+            <button id="addTcBtn" class="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">+ 새 테스트 케이스 추가</button>
+            <button id="tableEditToggle" class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600">편집</button>
           </div>
         </div>
-
-        <div id="insightsPanel" class="hidden">
-          <div id="insightsContent" class="space-y-5"></div>
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[1100px] text-xs">
+            <thead>
+              <tr class="border-b border-slate-200 text-slate-600">
+                <th class="text-left py-3 px-2 w-12">No.</th>
+                <th class="text-left py-3 px-2 w-40">중분류</th>
+                <th class="text-left py-3 px-2 w-44">Precondition</th>
+                <th class="text-left py-3 px-2 w-52">테스트 내용</th>
+                <th class="text-left py-3 px-2 w-64">기대 결과</th>
+                <th class="text-left py-3 px-2 w-32">결과</th>
+                <th class="text-left py-3 px-2 w-56">메모</th>
+                <th class="text-left py-3 px-2 w-12">작업</th>
+              </tr>
+            </thead>
+            <tbody id="tcBody"></tbody>
+          </table>
         </div>
+      </div>
+      <div id="insightsPanel" class="hidden">
+        <div id="insightsContent" class="space-y-5"></div>
+      </div>
       </div>
     </section>
   </div>
 
-  <!-- MILESTONE MODAL -->
   <div id="milestoneModal" class="fixed inset-0 bg-slate-900/40 hidden items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-lg w-full max-w-md border border-slate-200">
       <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
@@ -255,7 +235,60 @@
     </div>
   </div>
 
-  <!-- NEW/EDIT TC MODAL -->
+  <div id="adminLoginModal" class="fixed inset-0 bg-slate-900/40 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-lg w-full max-w-sm border border-slate-200">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <h3 class="text-lg font-semibold text-slate-800">관리자 로그인</h3>
+        <button id="adminLoginClose" class="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-100">✕</button>
+      </div>
+      <div class="px-5 py-4 space-y-4">
+        <div>
+          <label class="text-xs text-slate-500">아이디</label>
+          <input id="adminLoginId" type="text" class="mt-1 w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="아이디">
+        </div>
+        <div>
+          <label class="text-xs text-slate-500">비밀번호</label>
+          <input id="adminLoginPw" type="password" class="mt-1 w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="비밀번호">
+        </div>
+        <p id="adminLoginError" class="text-xs text-rose-600 hidden">아이디 또는 비밀번호가 올바르지 않습니다.</p>
+      </div>
+      <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-slate-100">
+        <button id="adminLoginCancel" class="px-4 py-2 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">취소</button>
+        <button id="adminLoginSubmit" class="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">로그인</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="adminLogoutModal" class="fixed inset-0 bg-slate-900/40 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-lg w-full max-w-sm border border-slate-200">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <h3 class="text-lg font-semibold text-slate-800">관리자 모드</h3>
+        <button id="adminLogoutClose" class="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-100">✕</button>
+      </div>
+      <div class="px-5 py-4">
+        <p class="text-sm text-slate-600">뷰어 모드로 전환할까요?</p>
+      </div>
+      <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-slate-100">
+        <button id="adminLogoutCancel" class="px-4 py-2 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">취소</button>
+        <button id="adminLogoutConfirm" class="px-4 py-2 text-sm rounded-lg bg-rose-600 text-white hover:bg-rose-700">로그아웃</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="reportModal" class="fixed inset-0 bg-slate-900/40 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-lg w-full max-w-sm border border-slate-200">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <h3 class="text-lg font-semibold text-slate-800">Report 요약</h3>
+        <button id="reportModalClose" class="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-100">✕</button>
+      </div>
+      <div id="reportModalBody" class="px-5 py-4 text-sm text-slate-700"></div>
+      <div class="flex items-center justify-end px-5 py-4 border-t border-slate-100">
+        <button id="reportModalOk" class="px-4 py-2 text-sm rounded-lg bg-slate-900 text-white hover:bg-slate-800">닫기</button>
+      </div>
+    </div>
+  </div>
+
+
   <div id="newTcModal" class="fixed inset-0 bg-slate-900/40 hidden items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-lg w-full max-w-2xl border border-slate-200">
       <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
@@ -307,7 +340,6 @@
     </div>
   </div>
 
-  <!-- ISSUE MODAL -->
   <div id="issueModal" class="fixed inset-0 bg-slate-900/40 hidden items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-lg w-full max-w-xl border border-slate-200">
       <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
@@ -356,7 +388,6 @@
       const fb = window.__fb;
       const ADMIN_EMAIL = "yuyu427j@gmail.com";
       let isAdmin = false;
-
       let milestonePieChart = null;
       let lastAddedTcId = null;
       let editTcId = null;
@@ -367,7 +398,6 @@
       let statusFilter = null;
       let activeSummaryAction = 'all';
       let activeReportTab = 'test-cases';
-
       const els = {
         milestoneTitleDisplay: document.getElementById('milestoneTitleDisplay'),
         modeBadge: document.getElementById('modeBadge'),
@@ -383,12 +413,10 @@
         milestoneLegendComplete: document.getElementById('milestoneLegendComplete'),
         milestoneLegendInProgress: document.getElementById('milestoneLegendInProgress'),
         milestoneLegendTodo: document.getElementById('milestoneLegendTodo'),
-
         taskBarPass: document.getElementById('taskBarPass'),
         taskBarInProgress: document.getElementById('taskBarInProgress'),
         taskBarTodo: document.getElementById('taskBarTodo'),
         taskProgressText: document.getElementById('taskProgressText'),
-
         newTcModal: document.getElementById('newTcModal'),
         newTcModalTitle: document.getElementById('newTcModalTitle'),
         newTcModalClose: document.getElementById('newTcModalClose'),
@@ -400,7 +428,6 @@
         newTcExpected: document.getElementById('newTcExpected'),
         newTcStatus: document.getElementById('newTcStatus'),
         newTcMemo: document.getElementById('newTcMemo'),
-
         issueModal: document.getElementById('issueModal'),
         issueModalClose: document.getElementById('issueModalClose'),
         issueModalCancel: document.getElementById('issueModalCancel'),
@@ -410,12 +437,25 @@
         issueSeverityInput: document.getElementById('issueSeverityInput'),
         issueAttachmentInput: document.getElementById('issueAttachmentInput'),
         issueAttachmentNote: document.getElementById('issueAttachmentNote'),
-
+        adminLoginModal: document.getElementById('adminLoginModal'),
+        adminLoginClose: document.getElementById('adminLoginClose'),
+        adminLoginCancel: document.getElementById('adminLoginCancel'),
+        adminLoginSubmit: document.getElementById('adminLoginSubmit'),
+        adminLoginId: document.getElementById('adminLoginId'),
+        adminLoginPw: document.getElementById('adminLoginPw'),
+        adminLoginError: document.getElementById('adminLoginError'),
+        adminLogoutModal: document.getElementById('adminLogoutModal'),
+        adminLogoutClose: document.getElementById('adminLogoutClose'),
+        adminLogoutCancel: document.getElementById('adminLogoutCancel'),
+        adminLogoutConfirm: document.getElementById('adminLogoutConfirm'),
+        reportModal: document.getElementById('reportModal'),
+        reportModalClose: document.getElementById('reportModalClose'),
+        reportModalOk: document.getElementById('reportModalOk'),
+        reportModalBody: document.getElementById('reportModalBody'),
         reportTabs: document.getElementById('reportTabs'),
         testCasesPanel: document.getElementById('testCasesPanel'),
         insightsPanel: document.getElementById('insightsPanel'),
         insightsContent: document.getElementById('insightsContent'),
-
         tcFilterTabs: document.getElementById('tcFilterTabs'),
         epicTabs: document.getElementById('epicTabs'),
         taskTabs: document.getElementById('taskTabs'),
@@ -431,11 +471,9 @@
         epicBarBlock: document.getElementById('epicBarBlock'),
         epicBarNot: document.getElementById('epicBarNot'),
         epicProgressText: document.getElementById('epicProgressText'),
-
         tcBody: document.getElementById('tcBody'),
         tcCount: document.getElementById('tcCount'),
         summaryHeader: document.getElementById('summaryHeader'),
-
         tableEditToggle: document.getElementById('tableEditToggle'),
         addEpicBtn: document.getElementById('addEpicBtn'),
         deleteEpicBtn: document.getElementById('deleteEpicBtn'),
@@ -468,13 +506,15 @@
           parsed.epics.forEach(epic => {
             if (!epic.tasks) {
               const legacyTcs = epic.tcs || [];
-              epic.tasks = legacyTcs.length > 0 ? [{ id: createId('task'), name: 'Task 1', tcs: legacyTcs }] : [];
+              if (legacyTcs.length > 0) {
+                epic.tasks = [{ id: createId('task'), name: 'Task 1', tcs: legacyTcs }];
+              } else {
+                epic.tasks = [];
+              }
               delete epic.tcs;
             }
-            (epic.tasks || []).forEach(t => { t.tcs = t.tcs || []; });
           });
           parsed.milestoneTitle = parsed.milestoneTitle || DEFAULT_MILESTONE_TITLE;
-          parsed.tcCounter = parsed.tcCounter || 0;
           return parsed;
         } catch (err) {
           return {
@@ -513,15 +553,25 @@
       function getActiveTask() {
         const epic = getActiveEpic();
         epic.tasks = epic.tasks || [];
-        if (epic.tasks.length === 0) { state.activeTaskId = null; return null; }
+        if (epic.tasks.length === 0) {
+          state.activeTaskId = null;
+          return null;
+        }
         let task = epic.tasks.find(t => t.id === state.activeTaskId);
-        if (!task) { state.activeTaskId = epic.tasks[0].id; task = epic.tasks[0]; }
+        if (!task) {
+          state.activeTaskId = epic.tasks[0].id;
+          task = epic.tasks[0];
+        }
         return task;
       }
 
       function countStatuses(tcs) {
-        let pass = 0, fail = 0, block = 0, notTest = 0, na = 0;
-        (tcs || []).forEach(tc => {
+        let pass = 0;
+        let fail = 0;
+        let block = 0;
+        let notTest = 0;
+        let na = 0;
+        tcs.forEach(tc => {
           if (tc.status === 'pass') pass += 1;
           else if (tc.status === 'fail') fail += 1;
           else if (tc.status === 'block') block += 1;
@@ -543,14 +593,16 @@
             state.activeEpicId = epic.id;
             const firstTask = epic.tasks && epic.tasks[0];
             state.activeTaskId = firstTask ? firstTask.id : null;
-            persist(); renderAll();
+            persist();
+            renderAll();
           });
           btn.addEventListener('dblclick', () => {
             if (!isAdmin || !isEpicEditMode) return;
             const name = prompt('에픽 제목을 수정해 주세요.', epic.name);
             if (!name) return;
             epic.name = name.trim();
-            persist(); renderAll();
+            persist();
+            renderAll();
           });
           els.epicTabs.appendChild(btn);
         });
@@ -566,17 +618,25 @@
           btn.className = 'px-3 py-2 rounded-lg text-sm border whitespace-nowrap ' +
             (isActive ? 'bg-white text-indigo-700 border-indigo-300' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50');
           btn.textContent = task.name;
-          btn.addEventListener('click', () => { state.activeTaskId = task.id; persist(); renderAll(); });
+          btn.addEventListener('click', () => {
+            state.activeTaskId = task.id;
+            persist();
+            renderAll();
+          });
           btn.addEventListener('dblclick', () => {
             if (!isAdmin || !isTaskEditMode) return;
             const name = prompt('Task 제목을 수정해 주세요.', task.name);
             if (!name) return;
             task.name = name.trim();
-            persist(); renderAll();
+            persist();
+            renderAll();
           });
           els.taskTabs.appendChild(btn);
         });
-        if (epic.tasks.length > 0 && !state.activeTaskId) state.activeTaskId = epic.tasks[0].id;
+        // task add button handled in header
+        if (epic.tasks.length > 0 && !state.activeTaskId) {
+          state.activeTaskId = epic.tasks[0].id;
+        }
         applyEpicTaskEditUI();
       }
 
@@ -586,22 +646,21 @@
         const taskCount = (epic.tasks || []).length;
         const forceShowAddTask = isAdmin && taskCount === 0;
         const hideTask = !isAdmin || (!isTaskEditMode && !forceShowAddTask);
-
         els.addEpicBtn.classList.toggle('invisible', hideEpic);
         els.deleteEpicBtn.classList.toggle('invisible', hideEpic);
         els.addEpicBtn.classList.toggle('pointer-events-none', hideEpic);
         els.deleteEpicBtn.classList.toggle('pointer-events-none', hideEpic);
-
         els.addTaskBtn.classList.toggle('invisible', hideTask);
         els.addTaskBtn.classList.toggle('pointer-events-none', hideTask);
         els.deleteTaskBtn.classList.toggle('invisible', hideTask);
         els.deleteTaskBtn.classList.toggle('pointer-events-none', hideTask);
-
         if (els.taskEditToggle) {
           const hideTaskToggle = !isAdmin || taskCount === 0;
           els.taskEditToggle.classList.toggle('hidden', hideTaskToggle);
         }
-        if (taskCount === 0) els.deleteTaskBtn.classList.add('invisible', 'pointer-events-none');
+        if (taskCount === 0) {
+          els.deleteTaskBtn.classList.add('invisible', 'pointer-events-none');
+        }
       }
 
       function renderGlobalDashboard() {
@@ -625,15 +684,15 @@
         const taskInProgress = taskCounts.fail + taskCounts.block;
         const taskTodo = taskCounts.notTest;
         const taskPct = taskTotal ? (taskComplete / taskTotal) * 100 : 0;
-
         const passPct = taskTotal ? (taskComplete / taskTotal) * 100 : 0;
         const inProgressPct = taskTotal ? (taskInProgress / taskTotal) * 100 : 0;
         const todoPct = taskTotal ? (taskTodo / taskTotal) * 100 : 0;
-
         if (els.taskBarPass) els.taskBarPass.style.width = passPct + '%';
         if (els.taskBarInProgress) els.taskBarInProgress.style.width = inProgressPct + '%';
         if (els.taskBarTodo) els.taskBarTodo.style.width = todoPct + '%';
-        if (els.taskProgressText) els.taskProgressText.textContent = `${taskComplete} / ${taskTotal} 완료 (${Math.round(taskPct)}%)`;
+        if (els.taskProgressText) {
+          els.taskProgressText.textContent = `${taskComplete} / ${taskTotal} 완료 (${Math.round(taskPct)}%)`;
+        }
 
         if (!milestonePieChart) {
           const ctx = els.milestonePie.getContext('2d');
@@ -641,9 +700,17 @@
             type: 'doughnut',
             data: {
               labels: ['완료', '진행 중', '할 일'],
-              datasets: [{ data: [complete, inProgress, todo], backgroundColor: ['#22c55e', '#3b82f6', '#cbd5e1'], borderWidth: 0 }]
+              datasets: [{
+                data: [complete, inProgress, todo],
+                backgroundColor: ['#22c55e', '#3b82f6', '#cbd5e1'],
+                borderWidth: 0
+              }]
             },
-            options: { responsive: true, cutout: '70%', plugins: { legend: { display: false } } }
+            options: {
+              responsive: true,
+              cutout: '70%',
+              plugins: { legend: { display: false } }
+            }
           });
         } else {
           milestonePieChart.data.datasets[0].data = [complete, inProgress, todo];
@@ -703,18 +770,32 @@
       function applyStatusStyle(select) {
         const base = 'border rounded-lg px-2 py-1 text-sm ';
         const val = select.value;
-        if (val === 'pass') select.className = base + 'border-emerald-200 bg-emerald-50 text-emerald-700';
-        else if (val === 'fail') select.className = base + 'border-rose-200 bg-rose-50 text-rose-700';
-        else if (val === 'block') select.className = base + 'border-amber-200 bg-amber-50 text-amber-700';
-        else if (val === 'na') select.className = base + 'border-slate-200 bg-slate-50 text-slate-500';
-        else select.className = base + 'border-slate-200 bg-slate-100 text-slate-600';
+        if (val === 'pass') {
+          select.className = base + 'border-emerald-200 bg-emerald-50 text-emerald-700';
+        } else if (val === 'fail') {
+          select.className = base + 'border-rose-200 bg-rose-50 text-rose-700';
+        } else if (val === 'block') {
+          select.className = base + 'border-amber-200 bg-amber-50 text-amber-700';
+        } else if (val === 'na') {
+          select.className = base + 'border-slate-200 bg-slate-50 text-slate-500';
+        } else {
+          select.className = base + 'border-slate-200 bg-slate-100 text-slate-600';
+        }
       }
 
       function computeTaskStats(task) {
         const counts = countStatuses(task ? (task.tcs || []) : []);
         const total = task ? (task.tcs || []).length : 0;
         const passRate = total ? Math.round((counts.pass / total) * 100) : 0;
-        return { total, pass: counts.pass, fail: counts.fail, block: counts.block, notTest: counts.notTest, na: counts.na, passRate };
+        return {
+          total,
+          pass: counts.pass,
+          fail: counts.fail,
+          block: counts.block,
+          notTest: counts.notTest,
+          na: counts.na,
+          passRate
+        };
       }
 
       function renderSummaryHeader(container, props) {
@@ -722,7 +803,6 @@
         const { breadcrumb, stats, releaseSignal, activeAction } = props;
         const safePassRate = Math.max(0, Math.min(100, Number(stats.passRate) || 0));
         const totalCount = Number(stats.total) || 0;
-
         const segments = [
           { key: 'pass', value: Number(stats.pass) || 0, className: 'bg-emerald-500' },
           { key: 'fail', value: Number(stats.fail) || 0, className: 'bg-rose-500' },
@@ -733,7 +813,11 @@
         const segmentWidths = totalCount > 0
           ? segments.map(seg => Math.max(0, (seg.value / totalCount) * 100))
           : segments.map(() => 0);
-
+        const baseBtn = 'px-3 py-2 text-xs rounded-lg border';
+        const isActive = (action) => action === activeAction;
+        const btnClass = (action) => isActive(action)
+          ? 'px-3 py-2 text-xs rounded-lg bg-slate-900 text-white'
+          : 'px-3 py-2 text-xs rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50';
         container.innerHTML = `
           <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4">
             <div class="mb-4">
@@ -751,7 +835,6 @@
                   <div class="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-2 py-1"><span>Not Tested</span><strong>${stats.notTest}</strong></div>
                   <div class="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-2 py-1"><span>N/A</span><strong>${stats.na}</strong></div>
                 </div>
-
                 <div class="mt-3">
                   <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
                     <span>Pass Rate</span>
@@ -761,19 +844,19 @@
                     <div class="h-full rounded-full bg-emerald-500" style="width: ${safePassRate}%"></div>
                   </div>
                 </div>
-
                 <div class="mt-3">
                   <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
                     <span>Status Ratio</span>
                     <strong class="text-slate-700">${totalCount}</strong>
                   </div>
                   <div class="w-full h-2 rounded-full bg-slate-200 overflow-hidden flex">
-                    ${segments.map((seg, idx) => `<div class="h-full ${seg.className}" style="width: ${segmentWidths[idx]}%"></div>`).join('')}
+                    ${segments.map((seg, idx) => `
+                      <div class="h-full ${seg.className}" style="width: ${segmentWidths[idx]}%"></div>
+                    `).join('')}
                   </div>
                 </div>
               </div>
-
-              <div class="min-w-[240px]">
+              <div class="min-w-[220px]">
                 <p class="text-xs text-slate-500 mb-2">Release Signal</p>
                 <p class="text-sm font-semibold text-slate-700">${releaseSignal.headline}</p>
                 <p class="text-xs text-slate-500 mt-1">${releaseSignal.sub}</p>
@@ -787,12 +870,35 @@
       }
 
       function getReleaseSignal(stats) {
-        if (stats.block > 0) return { headline: '⚠️ Block 케이스가 있어 진행에 제약이 있어요', sub: '> 환경/권한/의존 이슈 확인 후 해소되면 테스트를 이어갈 수 있어요' };
-        if (stats.fail > 0) return { headline: '⚠️ Fail 케이스가 있어 확인이 필요해요', sub: '> 관련 이슈를 확인하고 조치 후 재실행을 권장해요' };
+        if (stats.block > 0) {
+          return {
+            headline: '⚠️ Block 케이스가 있어 진행에 제약이 있어요',
+            sub: '> 환경/권한/의존 이슈 확인 후, 해소되면 테스트를 이어갈 수 있어요'
+          };
+        }
+        if (stats.fail > 0) {
+          return {
+            headline: '⚠️ Fail 케이스가 있어 확인이 필요해요',
+            sub: '> 관련 이슈를 확인하고, 조치 후 재실행을 권장해요'
+          };
+        }
         const notTestRatio = stats.total ? (stats.notTest / stats.total) : 0;
-        if (notTestRatio >= 0.3) return { headline: '🟡 아직 실행되지 않은 TC가 많아요', sub: '> 우선순위를 정해 점진적으로 실행하는 것을 권장해요' };
-        if (stats.passRate >= 90) return { headline: '✅ 릴리즈 가능해 보여요', sub: '> 핵심 시나리오를 한 번 더 확인하면 더 안전해요' };
-        return { headline: '🟡 진행 중이에요', sub: '> 남은 TC 실행과 결과 확인을 계속 진행해 주세요' };
+        if (notTestRatio >= 0.3) {
+          return {
+            headline: '🟡 아직 실행되지 않은 TC가 많아요',
+            sub: '> 우선순위를 정해 점진적으로 실행하는 것을 권장해요'
+          };
+        }
+        if (stats.passRate >= 90) {
+          return {
+            headline: '✅ 릴리즈 가능해 보여요',
+            sub: '> 핵심 시나리오를 한 번 더 확인하면 더 안전해요'
+          };
+        }
+        return {
+          headline: '🟡 진행 중이에요',
+          sub: '> 남은 TC 실행과 결과 확인을 계속 진행해 주세요'
+        };
       }
 
       function updateSummaryHeader() {
@@ -808,10 +914,11 @@
       }
 
       function setReportTab(tab) {
+        if (!els.testCasesPanel || !els.insightsPanel || !els.reportTabs) return;
         activeReportTab = tab;
         els.testCasesPanel.classList.toggle('hidden', tab !== 'test-cases');
         els.insightsPanel.classList.toggle('hidden', tab !== 'status-report');
-        els.reportTabs.querySelectorAll('[data-report-tab]').forEach(btn => {
+        els.reportTabs.querySelectorAll('[data-report-tab]').forEach((btn) => {
           const isActive = btn.dataset.reportTab === tab;
           btn.className = 'px-3 py-2 text-xs rounded-lg border ' +
             (isActive ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50');
@@ -826,7 +933,8 @@
         return 'all';
       }
 
-      function renderTcFilterTabs() {
+      function renderTcFilterTabs(stats) {
+        if (!els.tcFilterTabs) return;
         const tabs = [
           { key: 'all', label: 'All' },
           { key: 'not-test', label: 'Not Tested' },
@@ -836,7 +944,9 @@
         const activeKey = getActiveFilterKey();
         els.tcFilterTabs.innerHTML = tabs.map(tab => {
           const isActive = tab.key === activeKey;
-          const cls = isActive ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50';
+          const cls = isActive
+            ? 'bg-slate-900 text-white'
+            : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50';
           return `<button data-filter="${tab.key}" class="px-3 py-1.5 text-xs rounded-full ${cls}">${tab.label}</button>`;
         }).join('');
       }
@@ -859,84 +969,61 @@
 
       function buildNumberMap(tcs) {
         const map = new Map();
-        tcs.forEach((tc, idx) => map.set(tc.id, idx + 1));
+        tcs.forEach((tc, idx) => {
+          map.set(tc.id, idx + 1);
+        });
         return map;
       }
 
       function scrollToTableTopAndFocus() {
         const reportSection = document.getElementById('reportSection');
-        if (reportSection) reportSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (reportSection) {
+          reportSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
         const firstSelect = els.tcBody.querySelector('select[data-field="status"]');
         if (firstSelect) firstSelect.focus();
       }
 
-      function severityBadge(sev) {
-        const v = (sev || 'medium').toLowerCase();
-        if (v === 'critical') return `<span class="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">CRITICAL</span>`;
-        if (v === 'high') return `<span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">HIGH</span>`;
-        if (v === 'low') return `<span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-50 text-slate-600 border border-slate-200">LOW</span>`;
-        return `<span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">MEDIUM</span>`;
-      }
-
       function renderInsights(task, stats) {
+        if (!els.insightsContent) return;
         const tcs = task ? (task.tcs || []) : [];
         const safeStats = stats || computeTaskStats(task);
-
         const failCases = tcs.filter(tc => tc.status === 'fail');
         const blockCases = tcs.filter(tc => tc.status === 'block');
         const naCases = tcs.filter(tc => tc.status === 'na');
-
         const notTestCount = Number(safeStats.notTest) || 0;
         const failCount = Number(safeStats.fail) || 0;
         const blockCount = Number(safeStats.block) || 0;
         const naCount = Number(safeStats.na) || 0;
-
         const insightParts = [];
         if (failCount > 0) insightParts.push(`Fail ${failCount}건`);
         if (blockCount > 0) insightParts.push(`Block ${blockCount}건`);
         if (notTestCount > 0) insightParts.push(`Not Tested ${notTestCount}건`);
-
         const coverageText = insightParts.length > 0
           ? `${insightParts.join('과 ')}으로 아직 테스트 커버리지가 충분하지 않아요.`
           : '현재 큰 이슈는 보이지 않아요. 전체 케이스를 확인하며 마무리해 주세요.';
         const naText = naCount > 0 ? `N/A ${naCount}건은 범위 제외 항목이에요.` : '';
         const insightText = naText ? `${coverageText} ${naText}` : coverageText;
-
-        const renderIssueList = (cases) => {
-          if (!cases || cases.length === 0) return '<p class="text-xs text-slate-500">해당 케이스가 없습니다.</p>';
+        const renderCaseList = (cases) => {
+          if (!cases || cases.length === 0) {
+            return '<p class="text-xs text-slate-500">해당 케이스가 없습니다.</p>';
+          }
           return `
-            <ul class="space-y-2">
-              ${cases.map(tc => {
-                const issue = tc.issue || {};
-                const hasIssue = !!(issue.title || issue.content || issue.attachmentName);
-                return `
-                  <li class="text-xs text-slate-700 border border-slate-200 rounded-xl p-3 bg-white">
-                    <div class="flex items-center justify-between gap-2">
-                      <div class="min-w-0">
-                        <div class="flex items-center gap-2">
-                          <span class="font-semibold">${tc.id}</span>
-                          ${hasIssue ? severityBadge(issue.severity) : `<span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-50 text-slate-500 border border-slate-200">NO ISSUE</span>`}
-                        </div>
-                        <div class="text-slate-500 mt-1">${escapeHtml(tc.content || tc.middle || '제목 없음')}</div>
-                      </div>
-                      <button data-report-action="open-issue" data-tc="${tc.id}" class="text-xs px-3 py-1 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50">이슈 보기</button>
-                    </div>
-                    ${hasIssue ? `
-                      <div class="mt-2 text-slate-600">
-                        <div class="text-xs"><span class="text-slate-400">제목:</span> ${escapeHtml(issue.title || '(없음)')}</div>
-                        <div class="text-xs mt-1 whitespace-pre-wrap"><span class="text-slate-400">내용:</span> ${escapeHtml(issue.content || '(없음)')}</div>
-                        <div class="text-xs mt-1"><span class="text-slate-400">첨부:</span> ${escapeHtml(issue.attachmentName || '(없음)')}</div>
-                      </div>
-                    ` : `<div class="mt-2 text-xs text-slate-500">이슈 내용이 아직 등록되지 않았어요.</div>`}
-                  </li>
-                `;
-              }).join('')}
+            <ul class="space-y-1">
+              ${cases.map(tc => `
+                <li class="text-xs text-slate-700">
+                  <span class="font-semibold">${tc.id}</span>
+                  <span class="text-slate-500">·</span>
+                  <span>${escapeHtml(tc.content || tc.middle || '제목 없음')}</span>
+                </li>
+              `).join('')}
             </ul>
           `;
         };
-
         const renderNaCaseList = (cases) => {
-          if (!cases || cases.length === 0) return '<p class="text-xs text-slate-500">해당 케이스가 없습니다.</p>';
+          if (!cases || cases.length === 0) {
+            return '<p class="text-xs text-slate-500">해당 케이스가 없습니다.</p>';
+          }
           return `
             <ul class="space-y-2">
               ${cases.map(tc => `
@@ -946,40 +1033,1075 @@
                     <span class="text-slate-500">·</span>
                     <span>${escapeHtml(tc.content || tc.middle || '제목 없음')}</span>
                   </div>
-                  <div class="text-xs text-slate-500 mt-1">${escapeHtml(tc.memo || '(사유 메모 없음)')}</div>
+                  <div class="text-xs text-slate-500 mt-1">
+                    ${escapeHtml(tc.memo || '(사유 메모 없음)')}
+                  </div>
                 </li>
               `).join('')}
             </ul>
           `;
         };
-
         els.insightsContent.innerHTML = `
-  <div class="space-y-5">
-    <div class="bg-white border border-slate-200 rounded-2xl p-4">
-      <p class="text-sm text-slate-700">${escapeHtml(insightText)}</p>
-    </div>
+          <div class="space-y-5">
+            <div>
+              <p class="text-sm font-semibold text-slate-800">Status Report</p>
+              <p class="text-xs text-slate-600 mt-1">${insightText}</p>
+            </div>
+            <div class="space-y-4">
+              <div class="border border-slate-200 rounded-xl p-4 bg-white">
+                <div class="flex items-center justify-between mb-2">
+                  <p class="text-sm font-semibold text-slate-700">Failed Cases</p>
+                  <button data-report-action="filter-fail" class="text-xs px-3 py-1 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50">View Failed Cases</button>
+                </div>
+                ${renderCaseList(failCases)}
+              </div>
+              ${blockCount > 0 ? `
+                <div class="border border-slate-200 rounded-xl p-4 bg-white">
+                  <div class="flex items-center justify-between mb-2">
+                    <p class="text-sm font-semibold text-slate-700">Blocked Cases</p>
+                    <button data-report-action="filter-block" class="text-xs px-3 py-1 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50">View Blocked Cases</button>
+                  </div>
+                  ${renderCaseList(blockCases)}
+                </div>
+              ` : ''}
+              <div class="border border-slate-200 rounded-xl p-4 bg-white">
+                <div class="flex items-center justify-between mb-2">
+                  <p class="text-sm font-semibold text-slate-700">Not Tested Cases</p>
+                  <button data-report-action="filter-not-test" class="text-xs px-3 py-1 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50">View Not Tested Cases</button>
+                </div>
+                <p class="text-xs text-slate-600">아직 실행되지 않은 테스트가 많아요. 우선순위를 정해 실행을 시작해 주세요.</p>
+              </div>
+            </div>
+            <div class="border border-slate-200 rounded-xl p-4 bg-slate-50">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-sm">ℹ️</span>
+                <p class="text-sm font-semibold text-slate-700">N/A Cases</p>
+              </div>
+              ${renderNaCaseList(naCases)}
+            </div>
+          </div>
+        `;
+      }
 
-    <div class="grid md:grid-cols-2 gap-4">
-      <div class="bg-white border border-slate-200 rounded-2xl p-4">
-        <p class="text-xs font-semibold text-slate-600 mb-2">Fail</p>
-        ${renderIssueList(failCases)}
-      </div>
-      <div class="bg-white border border-slate-200 rounded-2xl p-4">
-        <p class="text-xs font-semibold text-slate-600 mb-2">Block</p>
-        ${renderIssueList(blockCases)}
-      </div>
-    </div>
+      function closeReportModal() {
+        if (!els.reportModal) return;
+        els.reportModal.classList.add('hidden');
+        els.reportModal.classList.remove('flex');
+      }
 
-    <div class="bg-white border border-slate-200 rounded-2xl p-4">
-      <p class="text-xs font-semibold text-slate-600 mb-2">N/A</p>
-      ${renderNaCaseList(naCases)}
-    </div>
-  </div>
-`;
+      function renderTable() {
+        const task = getActiveTask();
+        const allTcs = task ? (task.tcs || []) : [];
+        const tcs = getFilteredTcs(allTcs);
+        const numberMap = buildNumberMap(allTcs);
+        els.tcBody.innerHTML = '';
 
+        tcs.forEach((tc, index) => {
+          const tr = document.createElement('tr');
+          tr.className = 'border-b border-slate-100 hover:bg-slate-50' + (isAdmin && isTableEditMode ? ' cursor-move select-none' : '');
+          tr.dataset.tcId = tc.id;
+          tr.draggable = isAdmin && isTableEditMode;
 
+          tr.innerHTML = `
+            <td class="py-2 px-2 text-slate-500">${numberMap.get(tc.id) || '-'}</td>
+            <td class="py-2 px-2 text-slate-700">${escapeHtml(tc.middle || '')}</td>
+            <td class="py-2 px-2 text-slate-700">${escapeHtml(tc.precondition || '')}</td>
+            <td class="py-2 px-2 text-slate-700">${escapeHtml(tc.content || '')}</td>
+            <td class="py-2 px-2 text-slate-700">${escapeHtml(tc.expected || '')}</td>
+            <td class="py-2 px-2" data-cell="status"></td>
+            <td class="py-2 px-2">
+              <div class="flex items-center gap-2">
+                <input data-field="memo" class="w-full border border-slate-300 rounded-lg px-2 py-1" value="${escapeHtml(tc.memo || '')}" ${isAdmin ? '' : 'readonly'}>
+              </div>
+            </td>
+            <td class="py-2 px-2">
+              <div class="flex items-center gap-2 ${isAdmin && isTableEditMode && isViewAllMode() ? '' : 'invisible pointer-events-none'}">
+                <button data-action="delete" class="w-8 h-8 inline-flex items-center justify-center rounded bg-rose-50 text-rose-600 hover:bg-rose-100">🗑️</button>
+              </div>
+            </td>
+          `;
 
+          const selectCell = tr.querySelector('[data-cell="status"]');
+          const select = createStatusSelect(tc.status);
+          if (selectCell) selectCell.appendChild(select);
+          select.dataset.field = 'status';
 
+          els.tcBody.appendChild(tr);
+          if (tc.id === lastAddedTcId) {
+            tr.classList.add('row-enter');
+            tr.addEventListener('animationend', () => {
+              tr.classList.remove('row-enter');
+              if (lastAddedTcId === tc.id) lastAddedTcId = null;
+            }, { once: true });
+          }
+        });
+        els.tcCount.textContent = `${tcs.length}건`;
+        updateSummaryHeader();
+        renderTcFilterTabs(computeTaskStats(getActiveTask()));
+        renderInsights(getActiveTask(), computeTaskStats(getActiveTask()));
+      updateTableEditToggleVisibility();
+      }
 
+      function addTcRow(newTc) {
+        const task = getActiveTask();
+        if (!task) {
+          alert('먼저 Task를 추가해 주세요.');
+          return;
+        }
+        state.tcCounter += 1;
+        const tcId = 'tc_' + state.tcCounter;
+        task.tcs.push({
+          id: tcId,
+          middle: newTc.middle || '',
+          precondition: newTc.precondition || '',
+          content: newTc.content || '',
+          expected: newTc.expected || '',
+          status: newTc.status || 'not_test',
+          memo: newTc.memo || ''
+        });
+        lastAddedTcId = tcId;
+        persist();
+        renderAll();
+      }
 
+      function addTcRows(rows) {
+        const task = getActiveTask();
+        if (!task) {
+          alert('먼저 Task를 추가해 주세요.');
+          return;
+        }
+        rows.forEach(row => {
+          state.tcCounter += 1;
+          const tcId = 'tc_' + state.tcCounter;
+          task.tcs.push({
+            id: tcId,
+            middle: row.middle || '',
+            precondition: row.precondition || '',
+            content: row.content || '',
+            expected: row.expected || '',
+            status: row.status || 'not_test',
+            memo: row.memo || ''
+          });
+          lastAddedTcId = tcId;
+        });
+        persist();
+        renderAll();
+      }
 
+      function moveTc(task, fromIndex, toIndex) {
+        if (fromIndex === toIndex) return;
+        const item = task.tcs.splice(fromIndex, 1)[0];
+        task.tcs.splice(toIndex, 0, item);
+      }
+
+      let dragTcId = null;
+      let dropIndicatorRow = null;
+      let dropIndicatorPos = null;
+      let lastDragTime = 0;
+
+      function updateTcRow(tcId, data) {
+        const task = getActiveTask();
+        const tc = task.tcs.find(t => t.id === tcId);
+        if (!tc) return;
+        tc.middle = data.middle || '';
+        tc.precondition = data.precondition || '';
+        tc.content = data.content || '';
+        tc.expected = data.expected || '';
+        tc.status = data.status || 'not_test';
+        tc.memo = data.memo || '';
+        persist();
+        renderAll();
+      }
+
+      function copyTcLink(tcId) {
+        const epic = getActiveEpic();
+        const url = `${window.location.origin}${window.location.pathname}?epic=${encodeURIComponent(epic.name)}&tc=${encodeURIComponent(tcId)}`;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(() => {
+            alert('TC 링크가 복사되었습니다.');
+          }).catch(() => {
+            prompt('복사에 실패했습니다. 아래 링크를 복사해 주세요.', url);
+          });
+        } else {
+          prompt('아래 링크를 복사해 주세요.', url);
+        }
+      }
+
+      function copyEpicLink() {
+        const epic = getActiveEpic();
+        const url = `${window.location.origin}${window.location.pathname}?epic=${encodeURIComponent(epic.name)}`;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(() => {
+            alert('에픽 링크가 복사되었습니다.');
+          }).catch(() => {
+            prompt('복사에 실패했습니다. 아래 링크를 복사해 주세요.', url);
+          });
+        } else {
+          prompt('아래 링크를 복사해 주세요.', url);
+        }
+      }
+
+      function deleteTc(tcId) {
+        const task = getActiveTask();
+        const ok = confirm('정말로 삭제하시겠습니까?');
+        if (!ok) return;
+        task.tcs = (task.tcs || []).filter(tc => tc.id !== tcId);
+        persist();
+        renderAll();
+      }
+
+      function escapeHtml(value) {
+        const div = document.createElement('div');
+        div.textContent = value || '';
+        return div.innerHTML;
+      }
+
+      function renderAll() {
+        renderEpicTabs();
+        renderTaskTabs();
+        renderGlobalDashboard();
+        renderEpicDashboard();
+        renderTable();
+        setReportTab(activeReportTab);
+      }
+
+      function applyDeepLink() {
+        const params = new URLSearchParams(window.location.search);
+        const epicParam = params.get('epic');
+        const tcId = params.get('tc');
+        if (epicParam) {
+          const targetEpic = state.epics.find(e => e.name === epicParam || e.id === epicParam);
+          if (targetEpic) {
+            state.activeEpicId = targetEpic.id;
+            const firstTask = targetEpic.tasks && targetEpic.tasks[0];
+            state.activeTaskId = firstTask ? firstTask.id : null;
+          }
+        }
+        if (tcId) {
+          state.epics.forEach(epic => {
+            (epic.tasks || []).forEach(task => {
+              const hit = (task.tcs || []).some(tc => tc.id === tcId);
+              if (hit) {
+                state.activeEpicId = epic.id;
+                state.activeTaskId = task.id;
+              }
+            });
+          });
+        }
+        renderAll();
+        if (tcId) {
+          const row = document.querySelector(`[data-tc-id="${tcId}"]`);
+          if (row) {
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            row.classList.add('highlight-row');
+            setTimeout(() => row.classList.remove('highlight-row'), 3000);
+          }
+        }
+      }
+
+      els.addEpicBtn.addEventListener('click', () => {
+        if (!isAdmin) return;
+        const name = prompt('새 에픽 이름을 입력해 주세요.');
+        if (!name) return;
+        const epic = { id: createId('epic'), name: name.trim(), jiraUrl: '', tasks: [] };
+        state.epics.push(epic);
+        state.activeEpicId = epic.id;
+        state.activeTaskId = null;
+        persist();
+        renderAll();
+      });
+
+      els.addTaskBtn.addEventListener('click', () => {
+        if (!isAdmin || !isTaskEditMode) return;
+        const name = prompt('새 Task 이름을 입력해 주세요.');
+        if (!name) return;
+        const epic = getActiveEpic();
+        const task = { id: createId('task'), name: name.trim(), tcs: [] };
+        epic.tasks = epic.tasks || [];
+        epic.tasks.push(task);
+        state.activeTaskId = task.id;
+        persist();
+        renderAll();
+      });
+
+      els.deleteEpicBtn.addEventListener('click', () => {
+        if (!isAdmin) return;
+        const epic = getActiveEpic();
+        if ((epic.tasks || []).length > 0) {
+          alert('에픽에 Task가 남아 있어 삭제할 수 없습니다. 먼저 Task를 삭제해 주세요.');
+          return;
+        }
+        const ok = confirm(`에픽 "${epic.name}" 을(를) 삭제하시겠습니까?`);
+        if (!ok) return;
+        state.epics = state.epics.filter(e => e.id !== epic.id);
+        if (state.epics.length === 0) {
+          state.epics = [{ id: createId('epic'), name: '에픽 1', jiraUrl: '', tasks: [] }];
+        }
+        state.activeEpicId = state.epics[0].id;
+        state.activeTaskId = state.epics[0].tasks[0] ? state.epics[0].tasks[0].id : null;
+        persist();
+        renderAll();
+        applyRoleUI();
+      });
+
+      els.deleteTaskBtn.addEventListener('click', () => {
+        if (!isAdmin) return;
+        const epic = getActiveEpic();
+        const task = getActiveTask();
+        const ok = confirm(`Task "${task.name}" 을(를) 삭제하시겠습니까?`);
+        if (!ok) return;
+        epic.tasks = (epic.tasks || []).filter(t => t.id !== task.id);
+        if (epic.tasks.length === 0) {
+          state.activeTaskId = null;
+          persist();
+          renderAll();
+          return;
+        }
+        state.activeTaskId = epic.tasks[0].id;
+        persist();
+        renderAll();
+      });
+
+      function openNewTcModal() {
+        els.newTcMiddle.value = '';
+        els.newTcPrecondition.value = '';
+        els.newTcContent.value = '';
+        els.newTcExpected.value = '';
+        els.newTcStatus.value = 'not_test';
+        els.newTcMemo.value = '';
+        els.newTcModalTitle.textContent = '신규 TC 등록';
+        els.newTcModalSave.textContent = '저장';
+        editTcId = null;
+        els.newTcModal.classList.remove('hidden');
+        els.newTcModal.classList.add('flex');
+        els.newTcMiddle.focus();
+      }
+
+      function openEditTcModal(tcId) {
+        const task = getActiveTask();
+        const tc = task.tcs.find(t => t.id === tcId);
+        if (!tc) return;
+        els.newTcMiddle.value = tc.middle || '';
+        els.newTcPrecondition.value = tc.precondition || '';
+        els.newTcContent.value = tc.content || '';
+        els.newTcExpected.value = tc.expected || '';
+        els.newTcStatus.value = tc.status || 'not_test';
+        els.newTcMemo.value = tc.memo || '';
+        els.newTcModalTitle.textContent = 'TC 수정';
+        els.newTcModalSave.textContent = '수정';
+        editTcId = tcId;
+        els.newTcModal.classList.remove('hidden');
+        els.newTcModal.classList.add('flex');
+        els.newTcMiddle.focus();
+      }
+
+      function closeNewTcModal() {
+        els.newTcModal.classList.add('hidden');
+        els.newTcModal.classList.remove('flex');
+      }
+
+      els.addTcBtn.addEventListener('click', () => {
+        if (!isAdmin) return;
+        openNewTcModal();
+      });
+      els.newTcModalClose.addEventListener('click', closeNewTcModal);
+      els.newTcModalCancel.addEventListener('click', closeNewTcModal);
+      els.newTcModal.addEventListener('click', (e) => {
+        if (e.target === els.newTcModal) closeNewTcModal();
+      });
+      els.newTcModalSave.addEventListener('click', () => {
+        const payload = {
+          middle: els.newTcMiddle.value.trim(),
+          precondition: els.newTcPrecondition.value.trim(),
+          content: els.newTcContent.value.trim(),
+          expected: els.newTcExpected.value.trim(),
+          status: els.newTcStatus.value,
+          memo: els.newTcMemo.value.trim()
+        };
+        if (editTcId) {
+          updateTcRow(editTcId, payload);
+        } else {
+          addTcRow(payload);
+        }
+        closeNewTcModal();
+      });
+
+      function openIssueModal(tcId) {
+        const task = getActiveTask();
+        const tc = task.tcs.find(t => t.id === tcId);
+        if (!tc) return;
+        const issue = tc.issue || {};
+        els.issueTitleInput.value = issue.title || '';
+        els.issueContentInput.value = issue.content || '';
+        els.issueSeverityInput.value = issue.severity || 'medium';
+        els.issueAttachmentInput.value = '';
+        els.issueAttachmentNote.textContent = issue.attachmentName ? `기존 첨부: ${issue.attachmentName}` : '';
+        issueTcId = tcId;
+        els.issueModal.classList.remove('hidden');
+        els.issueModal.classList.add('flex');
+        els.issueTitleInput.focus();
+      }
+
+      function closeIssueModal() {
+        els.issueModal.classList.add('hidden');
+        els.issueModal.classList.remove('flex');
+      }
+
+      els.issueModalClose.addEventListener('click', closeIssueModal);
+      els.issueModalCancel.addEventListener('click', closeIssueModal);
+      els.issueModal.addEventListener('click', (e) => {
+        if (e.target === els.issueModal) closeIssueModal();
+      });
+      els.issueModalSave.addEventListener('click', () => {
+        if (!issueTcId) return;
+        const task = getActiveTask();
+        const tc = task.tcs.find(t => t.id === issueTcId);
+        if (!tc) return;
+        const file = els.issueAttachmentInput.files[0];
+        tc.issue = {
+          title: els.issueTitleInput.value.trim(),
+          content: els.issueContentInput.value.trim(),
+          severity: els.issueSeverityInput.value,
+          attachmentName: file ? file.name : (tc.issue ? tc.issue.attachmentName : '')
+        };
+        persist();
+        closeIssueModal();
+      });
+
+      function mapStatus(value) {
+        const raw = (value || '').toString().trim().toLowerCase();
+        if (!raw) return 'not_test';
+        if (['pass', 'passed', '성공', '완료'].includes(raw)) return 'pass';
+        if (['fail', 'failed', '실패'].includes(raw)) return 'fail';
+        if (['block', 'blocked', '차단', '보류'].includes(raw)) return 'block';
+        if (['n/a', 'na'].includes(raw)) return 'na';
+        if (['not test', 'not_test', 'untested', '미테스트', '미실행'].includes(raw)) return 'not_test';
+        return 'not_test';
+      }
+
+      function normalizeHeader(value) {
+        return (value || '').toString().replace(/\s+/g, '').trim();
+      }
+
+      function parseCsvText(text) {
+        const rows = [];
+        let row = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < text.length; i += 1) {
+          const char = text[i];
+          const next = text[i + 1];
+          if (char === '"' && inQuotes && next === '"') {
+            current += '"';
+            i += 1;
+            continue;
+          }
+          if (char === '"') {
+            inQuotes = !inQuotes;
+            continue;
+          }
+          if (char === ',' && !inQuotes) {
+            row.push(current);
+            current = '';
+            continue;
+          }
+          if ((char === '\n' || char === '\r') && !inQuotes) {
+            if (char === '\r' && next === '\n') i += 1;
+            row.push(current);
+            if (row.some(cell => cell !== '')) rows.push(row);
+            row = [];
+            current = '';
+            continue;
+          }
+          current += char;
+        }
+        if (current.length > 0 || row.length > 0) {
+          row.push(current);
+          if (row.some(cell => cell !== '')) rows.push(row);
+        }
+        return rows;
+      }
+
+      function escapeCsv(value) {
+        const str = (value ?? '').toString();
+        if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      }
+
+      function statusLabel(value) {
+        if (value === 'pass') return 'Pass';
+        if (value === 'fail') return 'Fail';
+        if (value === 'block') return 'Block';
+        if (value === 'na') return 'N/A';
+        return 'Not Tested';
+      }
+
+      function exportCurrentTaskCsv() {
+        const task = getActiveTask();
+        if (!task) {
+          alert('내보낼 Task가 없습니다.');
+          return;
+        }
+        const rows = [
+          ['중분류', '사전조건', '테스트 내용', '기대결과', '결과', '비고']
+        ];
+        (task.tcs || []).forEach(tc => {
+          rows.push([
+            tc.middle || '',
+            tc.precondition || '',
+            tc.content || '',
+            tc.expected || '',
+            statusLabel(tc.status),
+            tc.memo || ''
+          ]);
+        });
+        const csv = rows.map(row => row.map(escapeCsv).join(',')).join('\n');
+        const csvWithBom = '\uFEFF' + csv;
+        const blob = new Blob([csvWithBom], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `task_${(task.name || 'task').replace(/\s+/g, '_')}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      function parseExcelRows(rows) {
+        if (!rows || rows.length === 0) return [];
+        const headerIndex = rows.findIndex(row => row && row.some(cell => normalizeHeader(cell).includes('중분류')));
+        const startIndex = headerIndex >= 0 ? headerIndex + 1 : 0;
+        const headerRow = headerIndex >= 0 ? rows[headerIndex] : [];
+        const headerMap = {};
+        headerRow.forEach((cell, idx) => {
+          const key = normalizeHeader(cell);
+          if (key) headerMap[key] = idx;
+        });
+
+        const idxMiddle = headerMap['중분류'];
+        const idxPre = headerMap['사전조건'];
+        const idxContent = headerMap['테스트내용'];
+        const idxExpected = headerMap['기대결과'];
+        const idxStatus = headerMap['결과'];
+        const idxMemo = headerMap['비고'];
+
+        const parsed = [];
+        rows.slice(startIndex).forEach(row => {
+          if (!row || row.length === 0) return;
+          const content = idxContent !== undefined ? row[idxContent] : row[3];
+          if (!content) return;
+          parsed.push({
+            middle: idxMiddle !== undefined ? row[idxMiddle] : row[1],
+            precondition: idxPre !== undefined ? row[idxPre] : row[2],
+            content: content,
+            expected: idxExpected !== undefined ? row[idxExpected] : row[4],
+            status: mapStatus(idxStatus !== undefined ? row[idxStatus] : ''),
+            memo: idxMemo !== undefined ? row[idxMemo] : ''
+          });
+        });
+        return parsed;
+      }
+
+      function handleCsvFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          try {
+            const rows = parseCsvText(evt.target.result || '');
+            const parsed = parseExcelRows(rows);
+            if (parsed.length === 0) {
+              alert('가져올 수 있는 데이터가 없습니다. 헤더/내용을 확인해 주세요.');
+              return;
+            }
+            addTcRows(parsed);
+          } catch (err) {
+            alert(`CSV 불러오기 중 오류가 발생했습니다. (${err.message || '알 수 없는 오류'})`);
+          } finally {
+            els.csvFileInput.value = '';
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      els.importCsvBtn.addEventListener('click', () => {
+        if (!isAdmin) return;
+        els.csvFileInput.click();
+      });
+      els.csvFileInput.addEventListener('change', (e) => {
+        if (!isAdmin) return;
+        handleCsvFile(e.target.files[0]);
+      });
+      els.exportCsvBtn.addEventListener('click', () => {
+        if (!isAdmin || !isTableEditMode) return;
+        exportCurrentTaskCsv();
+      });
+
+      els.tableEditToggle.addEventListener('click', () => {
+        if (!isAdmin) return;
+        isTableEditMode = !isTableEditMode;
+        els.tableEditToggle.textContent = isTableEditMode ? '편집 종료' : '편집';
+        els.tableEditToggle.className = 'text-xs font-semibold px-3 py-1 rounded-full ' +
+          (isTableEditMode ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600');
+        renderTable();
+        applyRoleUI();
+      });
+
+      els.epicEditToggle.addEventListener('click', () => {
+        if (!isAdmin) return;
+        isEpicEditMode = !isEpicEditMode;
+        els.epicEditToggle.textContent = isEpicEditMode ? '편집 종료' : '편집';
+        els.epicEditToggle.className = 'text-xs font-semibold px-3 py-1 rounded-full ' +
+          (isEpicEditMode ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600');
+        applyEpicTaskEditUI();
+      });
+
+      els.taskEditToggle.addEventListener('click', () => {
+        if (!isAdmin) return;
+        isTaskEditMode = !isTaskEditMode;
+        els.taskEditToggle.textContent = isTaskEditMode ? '편집 종료' : '편집';
+        els.taskEditToggle.className = 'text-xs font-semibold px-3 py-1 rounded-full ' +
+          (isTaskEditMode ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600');
+        renderTaskTabs();
+        applyEpicTaskEditUI();
+      });
+
+      els.summaryHeader.addEventListener('click', (e) => {
+        const action = e.target.dataset.action;
+        if (!action) return;
+        if (action === 'issues-link') {
+          statusFilter = ['fail', 'block'];
+          activeSummaryAction = 'issues';
+          renderTable();
+        }
+      });
+
+      if (els.reportTabs) {
+        els.reportTabs.addEventListener('click', (e) => {
+          const tab = e.target.dataset.reportTab;
+          if (!tab) return;
+          setReportTab(tab);
+        });
+      }
+
+      if (els.tcFilterTabs) {
+        els.tcFilterTabs.addEventListener('click', (e) => {
+          const key = e.target.dataset.filter;
+          if (!key) return;
+          if (key === 'all') {
+            statusFilter = null;
+            activeSummaryAction = 'all';
+            renderTable();
+            setReportTab('test-cases');
+            return;
+          }
+          if (key === 'not-test') {
+            statusFilter = ['not_test'];
+            activeSummaryAction = 'not-test';
+            renderTable();
+            setReportTab('test-cases');
+            setTimeout(scrollToTableTopAndFocus, 0);
+            return;
+          }
+          if (key === 'issues') {
+            statusFilter = ['fail', 'block'];
+            activeSummaryAction = 'issues';
+            renderTable();
+            return;
+          }
+          if (key === 'na') {
+            statusFilter = ['na'];
+            activeSummaryAction = 'na';
+            renderTable();
+            setReportTab('test-cases');
+          }
+        });
+      }
+
+      if (els.reportModalClose) els.reportModalClose.addEventListener('click', closeReportModal);
+      if (els.reportModalOk) els.reportModalOk.addEventListener('click', closeReportModal);
+      if (els.reportModal) {
+        els.reportModal.addEventListener('click', (e) => {
+          if (e.target === els.reportModal) closeReportModal();
+        });
+      }
+      if (els.insightsContent) {
+        els.insightsContent.addEventListener('click', (e) => {
+        const action = e.target.dataset.reportAction;
+        if (!action) return;
+        if (action === 'filter-fail') {
+          statusFilter = ['fail'];
+          activeSummaryAction = 'issues';
+          renderTable();
+          setReportTab('test-cases');
+        }
+        if (action === 'filter-block') {
+          statusFilter = ['block'];
+          activeSummaryAction = 'issues';
+          renderTable();
+          setReportTab('test-cases');
+        }
+        if (action === 'filter-not-test') {
+          statusFilter = ['not_test'];
+          activeSummaryAction = 'not-test';
+          renderTable();
+          setReportTab('test-cases');
+          setTimeout(scrollToTableTopAndFocus, 0);
+        }
+        });
+      }
+
+      els.tcBody.addEventListener('input', (e) => {
+        if (!isAdmin) return;
+        const field = e.target.dataset.field;
+        const row = e.target.closest('tr');
+        if (!field || !row) return;
+        const task = getActiveTask();
+        const tc = task.tcs.find(t => t.id === row.dataset.tcId);
+        if (!tc) return;
+        tc[field] = e.target.value;
+        persist();
+        if (field === 'status') {
+          renderGlobalDashboard();
+          renderEpicDashboard();
+        }
+      });
+
+      els.tcBody.addEventListener('change', (e) => {
+        if (!isAdmin) return;
+        if (e.target.dataset.field === 'status') {
+          const row = e.target.closest('tr');
+          const task = getActiveTask();
+          const tc = task.tcs.find(t => t.id === row.dataset.tcId);
+          if (!tc) return;
+          tc.status = e.target.value;
+          applyStatusStyle(e.target);
+          persist();
+          renderGlobalDashboard();
+          renderEpicDashboard();
+          updateSummaryHeader();
+        if (tc.status === 'fail' || tc.status === 'block') {
+            openIssueModal(tc.id);
+          }
+        }
+      });
+
+      els.tcBody.addEventListener('click', (e) => {
+        const action = e.target.dataset.action;
+        const row = e.target.closest('tr');
+        if (!action || !row) return;
+        if (!isAdmin && action === 'delete') return;
+        const tcId = row.dataset.tcId;
+        if (action === 'copy') copyTcLink(tcId);
+        if (action === 'delete') {
+          if (!isViewAllMode()) {
+            alert('TC 삭제는 View All에서만 가능합니다. View All로 전환해 주세요.');
+            return;
+          }
+          deleteTc(tcId);
+        }
+      });
+
+      els.tcBody.addEventListener('dblclick', (e) => {
+        if (!isAdmin) return;
+        if (!isTableEditMode) return;
+        if (!isViewAllMode()) {
+          alert('TC 편집은 View All에서만 가능합니다. View All로 전환해 주세요.');
+          return;
+        }
+        if (e.target.closest('input, textarea, select, button, a')) return;
+        if (Date.now() - lastDragTime < 200) return;
+        const row = e.target.closest('tr');
+        if (!row) return;
+        openEditTcModal(row.dataset.tcId);
+      });
+
+      els.tcBody.addEventListener('dragstart', (e) => {
+        if (!isAdmin || !isTableEditMode) return;
+        if (e.target.closest('input, textarea, select, button, a')) return;
+        const row = e.target.closest('tr');
+        if (!row) return;
+        dragTcId = row.dataset.tcId;
+        row.classList.add('opacity-60');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', dragTcId);
+        lastDragTime = Date.now();
+      });
+
+      els.tcBody.addEventListener('dragend', (e) => {
+        const row = e.target.closest('tr');
+        if (row) row.classList.remove('opacity-60');
+        if (dropIndicatorRow) {
+          dropIndicatorRow.classList.remove('drop-indicator-top', 'drop-indicator-bottom');
+        }
+        dropIndicatorRow = null;
+        dropIndicatorPos = null;
+        dragTcId = null;
+      });
+
+      els.tcBody.addEventListener('dragover', (e) => {
+        if (!isAdmin || !isTableEditMode || !dragTcId) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const row = e.target.closest('tr');
+        if (!row) return;
+        const rect = row.getBoundingClientRect();
+        const isTop = e.clientY < rect.top + rect.height / 2;
+        const pos = isTop ? 'top' : 'bottom';
+        if (dropIndicatorRow && dropIndicatorRow !== row) {
+          dropIndicatorRow.classList.remove('drop-indicator-top', 'drop-indicator-bottom');
+        }
+        dropIndicatorRow = row;
+        dropIndicatorPos = pos;
+        row.classList.toggle('drop-indicator-top', isTop);
+        row.classList.toggle('drop-indicator-bottom', !isTop);
+      });
+
+      els.tcBody.addEventListener('drop', (e) => {
+        if (!isAdmin || !isTableEditMode || !dragTcId) return;
+        e.preventDefault();
+        const targetRow = e.target.closest('tr');
+        if (!targetRow) return;
+        const task = getActiveTask();
+        const fromIndex = task.tcs.findIndex(t => t.id === dragTcId);
+        let toIndex = task.tcs.findIndex(t => t.id === targetRow.dataset.tcId);
+        if (dropIndicatorPos === 'bottom') toIndex += 1;
+        if (fromIndex === -1 || toIndex === -1) return;
+        if (fromIndex < toIndex) toIndex -= 1;
+        toIndex = Math.max(0, Math.min(task.tcs.length - 1, toIndex));
+        moveTc(task, fromIndex, toIndex);
+        persist();
+        renderAll();
+        if (dropIndicatorRow) {
+          dropIndicatorRow.classList.remove('drop-indicator-top', 'drop-indicator-bottom');
+        }
+        dropIndicatorRow = null;
+        dropIndicatorPos = null;
+      });
+
+      els.copyEpicLink.addEventListener('click', copyEpicLink);
+
+      els.epicTitleDisplay.addEventListener('click', () => {
+        const epic = getActiveEpic();
+        if (!epic.jiraUrl) {
+          alert('에픽 Jira URL을 먼저 입력해 주세요.');
+          return;
+        }
+        window.open(epic.jiraUrl, '_blank', 'noopener');
+      });
+
+      if (els.epicTitleInput) els.epicTitleInput.addEventListener('input', (e) => {
+        if (!isAdmin) return;
+        const epic = getActiveEpic();
+        epic.name = e.target.value.trim() || '에픽';
+        persist();
+        renderAll();
+      });
+
+      if (els.epicJiraUrl) els.epicJiraUrl.addEventListener('input', (e) => {
+        if (!isAdmin) return;
+        const epic = getActiveEpic();
+        epic.jiraUrl = e.target.value.trim();
+        persist();
+      });
+
+      function updateMilestoneUI() {
+        els.milestoneTitleDisplay.textContent = state.milestoneTitle || DEFAULT_MILESTONE_TITLE;
+        if (state.milestoneJiraUrl) {
+          els.milestoneJiraBadge.classList.remove('hidden');
+          els.milestoneJiraBadge.href = state.milestoneJiraUrl;
+        } else {
+          els.milestoneJiraBadge.classList.add('hidden');
+          els.milestoneJiraBadge.removeAttribute('href');
+        }
+      }
+
+      function openMilestoneModal() {
+        els.milestoneModalTitleInput.value = state.milestoneTitle || DEFAULT_MILESTONE_TITLE;
+        els.milestoneModalJiraInput.value = state.milestoneJiraUrl || '';
+        els.milestoneModal.classList.remove('hidden');
+        els.milestoneModal.classList.add('flex');
+        els.milestoneModalTitleInput.focus();
+      }
+
+      function closeMilestoneModal() {
+        els.milestoneModal.classList.add('hidden');
+        els.milestoneModal.classList.remove('flex');
+      }
+
+      els.milestoneTitleDisplay.addEventListener('click', () => {
+        if (isAdmin) {
+          openMilestoneModal();
+          return;
+        }
+        if (state.milestoneJiraUrl) {
+          window.open(state.milestoneJiraUrl, '_blank', 'noopener');
+        }
+      });
+      els.milestoneModalClose.addEventListener('click', closeMilestoneModal);
+      els.milestoneModalCancel.addEventListener('click', closeMilestoneModal);
+      els.milestoneModal.addEventListener('click', (e) => {
+        if (e.target === els.milestoneModal) closeMilestoneModal();
+      });
+
+      els.milestoneModalSave.addEventListener('click', () => {
+        state.milestoneTitle = els.milestoneModalTitleInput.value.trim() || DEFAULT_MILESTONE_TITLE;
+        state.milestoneJiraUrl = els.milestoneModalJiraInput.value.trim();
+        persist();
+        updateMilestoneUI();
+        closeMilestoneModal();
+      });
+
+      function applyRoleUI() {
+        els.modeBadge.textContent = isAdmin ? '관리자 모드' : '뷰어 모드';
+        els.modeBadge.className = 'text-xs font-semibold px-3 py-1 rounded-full ' +
+          (isAdmin ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600');
+        if (!isAdmin) {
+          els.addEpicBtn.classList.add('hidden');
+          els.deleteEpicBtn.classList.add('hidden');
+          els.deleteTaskBtn.classList.add('hidden');
+          els.epicEditToggle.classList.add('hidden');
+          els.taskEditToggle.classList.add('hidden');
+          els.tableEditToggle.classList.add('hidden');
+          els.importCsvBtn.classList.add('hidden');
+          els.exportCsvBtn.classList.add('hidden');
+          els.addTcBtn.classList.add('hidden');
+          if (els.epicTitleInput) els.epicTitleInput.classList.add('hidden');
+          if (els.epicJiraUrl) els.epicJiraUrl.classList.add('hidden');
+          els.modeBadge.classList.add('cursor-pointer');
+        } else {
+          els.modeBadge.classList.remove('cursor-pointer');
+          els.tableEditToggle.classList.remove('hidden');
+          els.epicEditToggle.classList.remove('hidden');
+          els.taskEditToggle.classList.remove('hidden');
+          els.addEpicBtn.classList.remove('hidden');
+          els.deleteEpicBtn.classList.remove('hidden');
+          els.deleteTaskBtn.classList.remove('hidden');
+          els.importCsvBtn.classList.remove('hidden');
+          els.exportCsvBtn.classList.remove('hidden');
+          els.addTcBtn.classList.remove('hidden');
+        }
+        applyEpicTaskEditUI();
+        updateTableEditToggleVisibility();
+        if (isAdmin) {
+          const hideForEdit = !isTableEditMode;
+          els.importCsvBtn.classList.toggle('invisible', hideForEdit);
+          els.exportCsvBtn.classList.toggle('invisible', hideForEdit);
+          els.addTcBtn.classList.toggle('invisible', hideForEdit);
+          els.importCsvBtn.classList.toggle('pointer-events-none', hideForEdit);
+          els.exportCsvBtn.classList.toggle('pointer-events-none', hideForEdit);
+          els.addTcBtn.classList.toggle('pointer-events-none', hideForEdit);
+        }
+      }
+
+      if (!state.activeEpicId && state.epics.length > 0) {
+        state.activeEpicId = state.epics[0].id;
+      }
+      if (!state.activeTaskId && state.epics.length > 0) {
+        const firstTask = state.epics[0].tasks && state.epics[0].tasks[0];
+        state.activeTaskId = firstTask ? firstTask.id : null;
+      }
+      updateMilestoneUI();
+      applyRoleUI();
+      renderAll();
+
+      // Firebase 로그인 상태에 따라 관리자 모드 자동 전환
+      if (fb) {
+        fb.onAuthStateChanged(fb.auth, (user) => {
+          isAdmin = !!user && user.email === ADMIN_EMAIL;
+          applyRoleUI();
+          renderAll();
+        });
+      }
+
+      // 뱃지 클릭하면: 로그인(관리자 전환) / 로그아웃(뷰어 전환)
+      els.modeBadge.addEventListener('click', async () => {
+        if (!fb) {
+          alert("Firebase 로드가 안 됐어요. Firebase 초기화 코드가 <script>보다 위에 있는지 확인!");
+          return;
+        }
+
+        try {
+          if (!isAdmin) {
+            await fb.signInWithPopup(fb.auth, fb.provider);
+          } else {
+            await fb.signOut(fb.auth);
+          }
+        } catch (e) {
+          alert("로그인 실패: " + (e?.message || e));
+        }
+      });
+
+      function openAdminLogin() {
+        if (!els.adminLoginModal) return;
+        els.adminLoginId.value = '';
+        els.adminLoginPw.value = '';
+        els.adminLoginError.classList.add('hidden');
+        els.adminLoginModal.classList.remove('hidden');
+        els.adminLoginModal.classList.add('flex');
+        els.adminLoginId.focus();
+      }
+
+      function closeAdminLogin() {
+        if (!els.adminLoginModal) return;
+        els.adminLoginModal.classList.add('hidden');
+        els.adminLoginModal.classList.remove('flex');
+      }
+
+      function openAdminLogout() {
+        if (!els.adminLogoutModal) return;
+        els.adminLogoutModal.classList.remove('hidden');
+        els.adminLogoutModal.classList.add('flex');
+      }
+
+      function closeAdminLogout() {
+        if (!els.adminLogoutModal) return;
+        els.adminLogoutModal.classList.add('hidden');
+        els.adminLogoutModal.classList.remove('flex');
+      }
+
+      if (els.adminLoginClose) els.adminLoginClose.addEventListener('click', closeAdminLogin);
+      if (els.adminLoginCancel) els.adminLoginCancel.addEventListener('click', closeAdminLogin);
+      if (els.adminLoginModal) {
+        els.adminLoginModal.addEventListener('click', (e) => {
+          if (e.target === els.adminLoginModal) closeAdminLogin();
+        });
+      }
+      if (els.adminLoginSubmit) {
+        els.adminLoginSubmit.addEventListener('click', () => {
+          alert('이 로그인은 더 이상 사용하지 않습니다. 상단 뱃지(뷰어 모드)를 눌러 Google 로그인 해주세요.');
+        });
+      }
+
+      if (els.adminLogoutClose) els.adminLogoutClose.addEventListener('click', closeAdminLogout);
+      if (els.adminLogoutCancel) els.adminLogoutCancel.addEventListener('click', closeAdminLogout);
+      if (els.adminLogoutModal) {
+        els.adminLogoutModal.addEventListener('click', (e) => {
+          if (e.target === els.adminLogoutModal) closeAdminLogout();
+        });
+      }
+      if (els.adminLogoutConfirm) {
+        els.adminLogoutConfirm.addEventListener('click', () => {
+          localStorage.removeItem('qa_tms_admin');
+          isAdmin = false;
+          applyRoleUI();
+          renderAll();
+          closeAdminLogout();
+        });
+      }
+      document.querySelectorAll('.section-link').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const targetId = btn.dataset.target;
+          const target = document.getElementById(targetId);
+          if (!target) return;
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
+
+      applyDeepLink();
+    })();
+  </script>
+</body>
+</html>
