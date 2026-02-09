@@ -484,7 +484,7 @@
           signOut: auth.signOut.bind(auth)
         };
       })();
-      const ADMIN_EMAIL = "yuyu427j@gmail.com";
+      const ADMIN_EMAIL = "너의구글계정@gmail.com";
       let isAdmin = false;
       let isAuthBusy = false;
       let milestonePieChart = null;
@@ -2417,50 +2417,7 @@
 
       if (els.adminPageBtn) {
         els.adminPageBtn.addEventListener('click', () => {
-          showAdminSection();
-          loadAdminRequests();
-        });
-      }
-      if (els.adminBackBtn) {
-        els.adminBackBtn.addEventListener('click', () => {
-          showApp();
-        });
-      }
-      if (els.adminRequestsBody) {
-        els.adminRequestsBody.addEventListener('click', async (e) => {
-          if (!isAdmin) return;
-          const btn = e.target.closest('button[data-admin-action]');
-          if (!btn) return;
-          const action = btn.dataset.adminAction;
-          const requestId = btn.dataset.id;
-          const uid = btn.dataset.uid;
-          const type = btn.dataset.type;
-          const now = firebase.firestore.FieldValue.serverTimestamp();
-          if (action === 'approve') {
-            await fb.db.collection('access_requests').doc(requestId).update({
-              status: 'Approved',
-              resolvedAt: now
-            });
-            await fb.db.collection('users').doc(uid).set({
-              email: btn.dataset.email,
-              role: type === 'Admin' ? 'Admin' : 'Viewer',
-              status: 'Approved',
-              updatedAt: now
-            }, { merge: true });
-            loadAdminRequests();
-          }
-          if (action === 'reject') {
-            await fb.db.collection('access_requests').doc(requestId).update({
-              status: 'Rejected',
-              resolvedAt: now
-            });
-            await fb.db.collection('users').doc(uid).set({
-              status: 'Rejected',
-              role: 'Guest',
-              updatedAt: now
-            }, { merge: true });
-            loadAdminRequests();
-          }
+          window.location.href = 'admin.html';
         });
       }
 
