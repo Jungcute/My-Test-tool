@@ -408,9 +408,20 @@
       const DEFAULT_MILESTONE_TITLE = '마일스톤 제목';
 
       const state = loadState();
-      const fb = window.__fb;
+      const fb = window.__fb || (() => {
+        if (!window.firebase || !window.firebase.auth) return null;
+        const auth = window.firebase.auth();
+        return {
+          auth,
+          provider: new window.firebase.auth.GoogleAuthProvider(),
+          onAuthStateChanged: auth.onAuthStateChanged.bind(auth),
+          signInWithPopup: auth.signInWithPopup.bind(auth),
+          signOut: auth.signOut.bind(auth)
+        };
+      })();
       const ADMIN_EMAIL = "yuyu427j@gmail.com";
       let isAdmin = false;
+      let isAuthBusy = false;
       let milestonePieChart = null;
       let lastAddedTcId = null;
       let editTcId = null;
@@ -2045,6 +2056,10 @@
           alert("Firebase 로드가 안 됐어요. Firebase 초기화 코드가 <script>보다 위에 있는지 확인!");
           return;
         }
+        if (isAuthBusy) return;
+        isAuthBusy = true;
+        els.modeBadge.disabled = true;
+        els.modeBadge.classList.add('opacity-60', 'pointer-events-none');
 
         try {
           if (!isAdmin) {
@@ -2054,6 +2069,10 @@
           }
         } catch (e) {
           alert("로그인 실패: " + (e?.message || e));
+        } finally {
+          isAuthBusy = false;
+          els.modeBadge.disabled = false;
+          els.modeBadge.classList.remove('opacity-60', 'pointer-events-none');
         }
       });
 
