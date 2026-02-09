@@ -484,7 +484,7 @@
           signOut: auth.signOut.bind(auth)
         };
       })();
-      const ADMIN_EMAIL = "yuyu427j@gmail.com";
+      const ADMIN_EMAIL = "너의구글계정@gmail.com";
       let isAdmin = false;
       let isAuthBusy = false;
       let milestonePieChart = null;
@@ -2336,7 +2336,7 @@
       }
       updateMilestoneUI();
       applyRoleUI();
-      renderAll();
+      showLoginScreen();
 
       // Firebase 로그인 상태에 따라 화면 전환
       if (fb) {
@@ -2373,6 +2373,8 @@
           if (!fb) return;
           try {
             await fb.signOut();
+            showLoginScreen();
+            setLoginError('');
           } catch (e) {
             setLoginError('로그아웃 실패: ' + (e?.message || e));
           }
@@ -2384,6 +2386,8 @@
           if (!fb || !fb.auth.currentUser) return;
           try {
             await fb.signOut();
+            showLoginScreen();
+            setLoginError('');
           } catch (e) {
             alert('로그아웃 실패: ' + (e?.message || e));
           }
