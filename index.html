@@ -6,6 +6,29 @@
   <title>QA TMS (Quality Assurance Dashboard)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Firebase (compat SDK) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDglMEBLr011isuOTEl8hwu-o23oIM6WUk",
+      authDomain: "my-test-tool.firebaseapp.com",
+      projectId: "my-test-tool",
+      storageBucket: "my-test-tool.firebasestorage.app",
+      messagingSenderId: "729796287443",
+      appId: "1:729796287443:web:63b40613b74a5809d36d26",
+      measurementId: "G-FBLJLHQX34"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    window.__fb = {
+      auth,
+      provider: new firebase.auth.GoogleAuthProvider(),
+      onAuthStateChanged: auth.onAuthStateChanged.bind(auth),
+      signInWithPopup: auth.signInWithPopup.bind(auth),
+      signOut: auth.signOut.bind(auth)
+    };
+  </script>
   <style>
     .highlight-row {
       background-color: #fef9c3;
@@ -2009,7 +2032,7 @@
 
       // Firebase 로그인 상태에 따라 관리자 모드 자동 전환
       if (fb) {
-        fb.onAuthStateChanged(fb.auth, (user) => {
+        fb.onAuthStateChanged((user) => {
           isAdmin = !!user && user.email === ADMIN_EMAIL;
           applyRoleUI();
           renderAll();
@@ -2025,9 +2048,9 @@
 
         try {
           if (!isAdmin) {
-            await fb.signInWithPopup(fb.auth, fb.provider);
+            await fb.signInWithPopup(fb.provider);
           } else {
-            await fb.signOut(fb.auth);
+            await fb.signOut();
           }
         } catch (e) {
           alert("로그인 실패: " + (e?.message || e));
