@@ -484,7 +484,7 @@
           signOut: auth.signOut.bind(auth)
         };
       })();
-      const ADMIN_EMAIL = "yuyu427j@gmail.com";
+      const ADMIN_EMAIL = "너의구글계정@gmail.com";
       let isAdmin = false;
       let isAuthBusy = false;
       let milestonePieChart = null;
@@ -2189,7 +2189,6 @@
         const query = await fb.db.collection('access_requests')
           .where('uid', '==', uid)
           .where('status', '==', 'Pending')
-          .orderBy('requestedAt', 'desc')
           .limit(1)
           .get();
         if (query.empty) return null;
@@ -2277,7 +2276,6 @@
         if (!fb || !fb.db) return;
         const query = await fb.db.collection('access_requests')
           .where('status', '==', 'Pending')
-          .orderBy('requestedAt', 'desc')
           .get();
         const rows = query.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderAdminRequests(rows);
